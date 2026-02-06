@@ -19,6 +19,7 @@ import {
   Smile,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import apiClient from '@/lib/api/client';
 
 interface StreamViewer {
   userID: string;
@@ -68,9 +69,9 @@ export function ZegoStreamingRoom({ config, onLeave, className }: ZegoStreamingR
       try {
         const engine = new ZegoExpressEngine(config.appID, config.server);
         
-        // Set room config
-        engine.setRoomConfig({
-          maxMemberCount: 100,
+        // Set log config
+        engine.setLogConfig({
+          logLevel: 'debug',
         });
 
         // Listen for remote users
@@ -530,21 +531,94 @@ export function ZegoStreamingRoom({ config, onLeave, className }: ZegoStreamingR
 
 // Streaming Room Page Component
 interface StreamingRoomPageProps {
-  roomID: string;
-  userID: string;
-  userName: string;
-  token: string;
-  role: 'Host' | 'Cohost' | 'Audience';
+  streamId: string; // Backend stream ID
 }
 
-export function StreamingRoomPage({ 
-  roomID, 
-  userID, 
-  userName, 
-  token, 
-  role 
-}: StreamingRoomPageProps) {
+export function StreamingRoomPage({ streamId }: StreamingRoomPageProps) {
   const [isLeft, setIsLeft] = useState(false);
+  const [config, setConfig] = useState<ZegoStreamConfig | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStreamConfig = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch stream details and token from backend
+        const response = await apiClient.get(`/streaming/${streamId}`);
+        const streamData = response.data.data;
+        
+        // Generate additional token for Zego
+        const tokenResponse = await apiClient.post('/streaming/token', {
+          roomId: streamData.roomId,
+          userName: streamData.instructor?.name || 'User',
+          role: streamData.instructor?.id === response.data.data.userId ? 1 : 0,
+        });
+        
+        const tokenData = tokenResponse.data.data;
+        
+        setConfig({
+          appID: tokenData.appId,
+          server: 'wss://webliveroom' + tokenData.appId + '-api.zego.im/ws',
+          roomID: tokenData.roomId,
+          userID: tokenData.userId,
+          userName: tokenData.userName,
+          token: tokenData.token,
+          role: tokenData.role === 1 ? 'Host' : 'Audience',
+        });
+      } catch (err: any) {
+        setError(err?.response?.data?.message || 'Failed to load stream');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (streamId) {
+      fetchStreamConfig();
+    }
+  }, [streamId]);
+
+  // Notify backend when joining/leaving
+  useEffect(() => {
+    if (!isLoading && config) {
+      // Join the stream
+      apiClient.post(`/streaming/${streamId}/join`).catch(console.error);
+      
+      return () => {
+        // Leave the stream when component unmounts
+        apiClient.post(`/streaming/${streamId}/leave`).catch(console.error);
+      };
+    }
+  }, [isLoading, config, streamId]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
+          <p className="text-slate-400">جاري الاتصال بالبث المباشر...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2 text-red-400">خطأ</h1>
+          <p className="text-slate-400 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.href = '/courses'}
+            className="px-6 py-3 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            العودة للدورات
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLeft) {
     return (
@@ -563,15 +637,7 @@ export function StreamingRoomPage({
     );
   }
 
-  const config: ZegoStreamConfig = {
-    appID: 1765136310,
-    server: 'wss://webliveroom1765136310-api.zego.im/ws',
-    roomID,
-    userID,
-    userName,
-    token,
-    role,
-  };
+  if (!config) return null;
 
   return (
     <ZegoStreamingRoom 

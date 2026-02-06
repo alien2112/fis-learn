@@ -116,6 +116,28 @@ enum CommunityModerationActionType {
   UNLOCK_THREAD
 }
 
+enum NotificationType {
+  // Course
+  COURSE_ENROLLED
+  COURSE_COMPLETED
+  COURSE_UPDATED
+  LESSON_REMINDER
+  // Community
+  COMMUNITY_REPLY
+  COMMUNITY_MENTION
+  MESSAGE_PINNED
+  // Live
+  LIVE_CLASS_STARTING
+  LIVE_CLASS_REMINDER
+  // Submissions
+  SUBMISSION_GRADED
+  ASSIGNMENT_FEEDBACK
+  // System
+  SYSTEM_ANNOUNCEMENT
+  ACHIEVEMENT_UNLOCKED
+  STREAK_MILESTONE
+}
+
 // ============ SUBSCRIPTION & PAYMENT ENUMS ============
 
 enum SubscriptionTier {
@@ -219,6 +241,8 @@ model User {
   streamViewers              StreamViewer[]
   // Skill tree relations
   skillTreesCreated          SkillTree[]
+  notifications              Notification[]
+  notificationPreference     NotificationPreference?
 
   @@map("users")
 }
@@ -1277,4 +1301,40 @@ model SkillNode {
 
   @@index([skillTreeId])
   @@map("skill_nodes")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String           @map("user_id")
+  type      NotificationType
+  title     String
+  body      String
+  data      Json? // Arbitrary payload (courseId, lessonId, etc.)
+  isRead    Boolean          @default(false) @map("is_read")
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id               String   @id @default(cuid())
+  userId           String   @unique @map("user_id")
+  emailEnabled     Boolean  @default(true) @map("email_enabled")
+  pushEnabled      Boolean  @default(true) @map("push_enabled")
+  inAppEnabled     Boolean  @default(true) @map("in_app_enabled")
+  // Granular controls
+  courseUpdates    Boolean  @default(true) @map("course_updates")
+  communityReplies Boolean  @default(true) @map("community_replies")
+  liveClassAlerts  Boolean  @default(true) @map("live_class_alerts")
+  promotions       Boolean  @default(true) @map("promotions")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }

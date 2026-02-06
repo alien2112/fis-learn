@@ -8,46 +8,46 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 
 const icons = {
-  Zap,
-  Users,
-  Target,
+    Zap,
+    Users,
+    Target,
 };
 
 export function FeatureSection() {
-  const t = useTranslations('home.features');
+    const t = useTranslations('home.features');
 
-  const features = [
-    {
-      key: 'ownPace',
-      icon: 'Zap',
-      align: 'right',
-      image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop",
-    },
-    {
-      key: 'mentorship',
-      icon: 'Users',
-      align: 'left',
-      image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=2070&auto=format&fit=crop",
-    },
-    {
-      key: 'projectBased',
-      icon: 'Target',
-      align: 'right',
-      image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop",
-    }
-  ];
+    const features = [
+        {
+            key: 'ownPace',
+            icon: 'Zap',
+            align: 'right',
+            image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop",
+        },
+        {
+            key: 'mentorship',
+            icon: 'Users',
+            align: 'left',
+            image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=2070&auto=format&fit=crop",
+        },
+        {
+            key: 'projectBased',
+            icon: 'Target',
+            align: 'right',
+            image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop",
+        }
+    ];
 
-  return (
-    <section className="py-32 relative overflow-hidden">
+    return (
+        <section className="py-16 md:py-24 lg:py-32 relative overflow-hidden">
             {/* Background Decoration */}
             <div className="absolute top-1/4 left-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] -z-10" />
             <div className="absolute bottom-1/4 right-0 w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[100px] -z-10" />
 
             <div className="container space-y-32">
-        {features.map((feature, index) => (
-          <FeatureBlock key={feature.key} feature={feature} index={index} t={t} />
-        ))}
-      </div>
+                {features.map((feature, index) => (
+                    <FeatureBlock key={feature.key} feature={feature} index={index} t={t} />
+                ))}
+            </div>
         </section>
     );
 }
@@ -55,7 +55,7 @@ export function FeatureSection() {
 function FeatureBlock({ feature, index, t }: { feature: any, index: number, t: any }) {
     const isEven = index % 2 === 0;
     const Icon = icons[feature.icon as keyof typeof icons];
-    
+
     const title = t(`${feature.key}.title`);
     const description = t(`${feature.key}.description`);
     const points = [

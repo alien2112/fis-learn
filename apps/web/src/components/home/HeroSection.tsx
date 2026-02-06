@@ -9,7 +9,7 @@ import { useTranslations } from 'next-intl';
 
 export function HeroSection() {
   const t = useTranslations('hero');
-  
+
   return (
     <section className="relative w-full overflow-hidden bg-background pt-32 pb-20 lg:pt-48 lg:pb-32">
       {/* Background Gradients */}
@@ -105,22 +105,22 @@ export function HeroSection() {
             </motion.div>
           </div>
 
-          {/* Right side image card - keeping as is for now */}
+          {/* Right side image card */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4, duration: 0.8 }}
-            className="relative lg:ml-auto hidden lg:block"
+            className="relative w-full max-w-sm mx-auto lg:max-w-none lg:ml-auto mt-12 lg:mt-0"
           >
             {/* Main Floating Card */}
-            <div className="relative z-10 w-[550px] aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl border-8 border-background/50 backdrop-blur-sm">
+            <div className="relative z-10 w-full lg:w-[550px] aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl border-8 border-background/50 backdrop-blur-sm">
               <img
                 src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop"
                 alt="Students learning"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-8 w-full">
+              <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-medium border border-white/10">
                     {t('liveNow')}
@@ -129,8 +129,8 @@ export function HeroSection() {
                     {t('category')}
                   </div>
                 </div>
-                <h3 className="text-3xl font-bold text-white mb-2">{t('courseTitle')}</h3>
-                <p className="text-white/80 line-clamp-2 mb-4">{t('courseDescription')}</p>
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">{t('courseTitle')}</h3>
+                <p className="text-white/80 line-clamp-2 mb-4 text-sm md:text-base">{t('courseDescription')}</p>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white text-xs">SC</div>
@@ -147,14 +147,14 @@ export function HeroSection() {
             <motion.div
               animate={{ y: [-10, 10, -10] }}
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-10 -right-12 z-20"
+              className="absolute top-4 -right-4 lg:top-10 lg:-right-12 z-20"
             >
-              <GlassCard className="p-4 flex items-center gap-3 !bg-white/90 dark:!bg-black/80 backdrop-blur-xl border-none shadow-xl rounded-2xl">
+              <GlassCard className="p-3 md:p-4 flex items-center gap-3 !bg-white/90 dark:!bg-black/80 backdrop-blur-xl border-none shadow-xl rounded-2xl scale-90 md:scale-100">
                 <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full text-green-600">
-                  <CheckCircle2 className="w-6 h-6" />
+                  <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <div>
-                  <div className="font-bold">{t('completed')}</div>
+                  <div className="font-bold text-sm md:text-base">{t('completed')}</div>
                   <div className="text-xs text-muted-foreground">{t('xpEarned')}</div>
                 </div>
               </GlassCard>
@@ -163,7 +163,7 @@ export function HeroSection() {
             <motion.div
               animate={{ y: [10, -10, 10] }}
               transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-              className="absolute bottom-20 -left-12 z-20"
+              className="absolute bottom-12 -left-4 lg:bottom-20 lg:-left-12 z-20"
             >
               <GlassCard className="p-4 flex items-center gap-3 !bg-white/90 dark:!bg-black/80 backdrop-blur-xl border-none shadow-xl rounded-2xl">
                 <div className="flex -space-x-2">

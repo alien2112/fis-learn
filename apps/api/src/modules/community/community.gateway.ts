@@ -1,6 +1,7 @@
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -12,6 +13,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuthUser } from '@/modules/auth/types/jwt-payload.interface';
+import { Inject } from '@nestjs/common';
+import Redis from 'ioredis';
 
 interface JoinPayload {
   courseId: string;
@@ -35,18 +38,28 @@ interface SendPayload {
     credentials: true,
   },
 })
-export class CommunityGateway {
+export class CommunityGateway implements OnGatewayInit {
   @WebSocketServer()
   server: Server;
 
-  private readonly messageBuckets = new Map<string, number[]>();
+  private redisClient: Redis;
 
   constructor(
     private readonly communityService: CommunityService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-  ) {}
+    @Inject('REDIS_ADAPTER') private readonly redisAdapter: any,
+  ) {
+    // Create Redis client for rate limiting
+    const redisUrl = this.configService.get<string>('redis.url') || 'redis://localhost:6379';
+    this.redisClient = new Redis(redisUrl);
+  }
+
+  afterInit(server: Server) {
+    // Attach Redis adapter for multi-instance scaling
+    server.adapter(this.redisAdapter);
+  }
 
   async handleConnection(client: Socket) {
     try {
@@ -58,9 +71,8 @@ export class CommunityGateway {
   }
 
   handleDisconnect(client: Socket) {
-    if (client.data?.user?.id) {
-      this.messageBuckets.delete(client.data.user.id);
-    }
+    // No need to clean up Redis keys - they expire automatically
+    // The rate limit bucket will expire after 10 seconds
   }
 
   private async authenticate(client: Socket): Promise<AuthUser> {
@@ -107,17 +119,18 @@ export class CommunityGateway {
     return `channel:${channelId}`;
   }
 
-  private allowMessage(userId: string) {
-    const now = Date.now();
-    const windowMs = 10000;
+  private async allowMessage(userId: string): Promise<boolean> {
+    const key = `rate:community:${userId}`;
+    const windowSeconds = 10;
     const maxMessages = 6;
 
-    const timestamps = this.messageBuckets.get(userId) || [];
-    const filtered = timestamps.filter((ts) => now - ts < windowMs);
-    filtered.push(now);
-    this.messageBuckets.set(userId, filtered);
+    const current = await this.redisClient.incr(key);
+    if (current === 1) {
+      // First message in window, set expiry
+      await this.redisClient.expire(key, windowSeconds);
+    }
 
-    return filtered.length <= maxMessages;
+    return current <= maxMessages;
   }
 
   @SubscribeMessage('community:join')
@@ -153,7 +166,7 @@ export class CommunityGateway {
       throw new WsException('Unauthorized');
     }
 
-    if (!this.allowMessage(user.id)) {
+    if (!await this.allowMessage(user.id)) {
       throw new WsException('Slow down');
     }
 

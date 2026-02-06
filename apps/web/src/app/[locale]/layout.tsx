@@ -2,6 +2,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { AuthProvider } from '@/contexts/auth-context';
+import { ChatBubble } from '@/components/chatbot';
 
 export default async function LocaleLayout({
   children,
@@ -20,6 +21,7 @@ export default async function LocaleLayout({
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
+          <ChatBubble />
         </AuthProvider>
       </NextIntlClientProvider>
     </div>

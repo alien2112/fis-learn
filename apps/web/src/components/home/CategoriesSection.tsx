@@ -57,7 +57,7 @@ export function CategoriesSection() {
         const response = await fetch(`${API_URL}/categories`);
         if (!response.ok) throw new Error('Failed to fetch categories');
         const data = await response.json();
-        
+
         // Flatten categories from tree structure and get top-level ones
         const flattenCategories = (cats: any[]): Category[] => {
           const result: Category[] = [];
@@ -69,12 +69,12 @@ export function CategoriesSection() {
           }
           return result;
         };
-        
+
         const allCategories = flattenCategories(data.data || []);
         // Filter to only show the 3 main categories we want
         const allowedSlugs = ['programming', 'graphic-design', 'trading'];
         const filtered = allCategories.filter(c => allowedSlugs.includes(c.slug));
-        
+
         // If no categories exist yet, use defaults
         if (filtered.length === 0) {
           setCategories([
@@ -114,7 +114,7 @@ export function CategoriesSection() {
   }
 
   return (
-    <section className="py-24 bg-secondary/20">
+    <section className="py-16 md:py-24 bg-secondary/20">
       <div className="container">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
           <div className="max-w-2xl">

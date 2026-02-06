@@ -19,6 +19,9 @@ import { CodeExecutionModule } from './modules/code-execution/code-execution.mod
 import { HealthModule } from './modules/health/health.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { SkillTreesModule } from './modules/skill-trees/skill-trees.module';
+import { StreamingModule } from './modules/streaming/streaming.module';
+import { ChatbotModule } from './modules/chatbot/chatbot.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { SubscriptionThrottleGuard } from './common/guards/subscription-throttle.guard';
@@ -75,7 +78,9 @@ import configuration from './config/configuration';
     HealthModule,
     AnalyticsModule,
     SkillTreesModule,
-    // StreamingModule, // TODO: Add back after prisma migrate
+    StreamingModule,
+    ChatbotModule,
+    NotificationsModule,
 
     // Media & Content modules (provider-agnostic)
     VideoModule.forRoot(),

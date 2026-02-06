@@ -28,4 +28,17 @@ export default () => ({
     pass: process.env.SMTP_PASS,
     from: process.env.SMTP_FROM || 'noreply@fis-learn.com',
   },
+  ai: {
+    provider: (process.env.AI_PROVIDER as 'claude' | 'openai') || 'claude',
+    claudeApiKey: process.env.ANTHROPIC_API_KEY,
+    claudeModel: process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929',
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    maxTokens: parseInt(process.env.AI_MAX_TOKENS || '500', 10),
+    temperature: parseFloat(process.env.AI_TEMPERATURE || '0.7'),
+  },
+  zego: {
+    appId: parseInt(process.env.ZEGO_APP_ID || '0', 10),
+    serverSecret: process.env.ZEGO_SERVER_SECRET || '',
+  },
 });

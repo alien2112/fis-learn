@@ -12,7 +12,7 @@ export default async function AboutPage({ params: { locale } }: { params: { loca
 
   return (
     <main className="overflow-hidden">
-      <section className="relative py-24 md:py-32 bg-secondary/30">
+      <section className="relative py-16 md:py-32 bg-secondary/30">
         <div className="container relative z-10 text-center max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">
             {t('hero.title')}

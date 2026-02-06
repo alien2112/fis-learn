@@ -12,8 +12,8 @@ export function CTASection() {
     const t = useTranslations('cta');
 
     return (
-        <section className="py-24 px-4 sm:px-6">
-            <div className="container relative rounded-3xl overflow-hidden bg-primary px-6 py-20 text-center sm:px-12 lg:px-20">
+        <section className="py-16 md:py-24 px-4 sm:px-6">
+            <div className="container relative rounded-3xl overflow-hidden bg-primary px-6 py-12 md:py-20 text-center sm:px-12 lg:px-20">
                 {/* Background Patterns */}
                 <div className="absolute inset-0 -z-10 bg-[linear-gradient(110deg,#6366f1,45%,#8b5cf6,55%,#6366f1)] opacity-20" />
                 <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />

@@ -28,7 +28,7 @@ export function TestimonialSection() {
   ];
 
   return (
-    <section className="py-24 bg-muted/30">
+    <section className="py-16 md:py-24 bg-muted/30">
       <div className="container">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <motion.h2
