@@ -1,0 +1,1280 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ============ ENUMS ============
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  PENDING_VERIFICATION
+}
+
+enum CourseStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum PricingModel {
+  FREE
+  PAID
+  ACCESS_CODE_ONLY
+}
+
+enum ContentType {
+  VIDEO
+  PDF
+  QUIZ
+  ASSIGNMENT
+}
+
+enum MaterialType {
+  VIDEO
+  PDF
+  QUIZ
+  ASSIGNMENT
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+enum PaymentStatus {
+  FREE
+  PAID
+  CODE_REDEEMED
+}
+
+enum AccessCodeType {
+  COURSE
+  VIDEO
+}
+
+enum AccessCodeStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum LiveClassStatus {
+  UPCOMING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum BlogPostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+}
+
+enum CommunityChannelType {
+  ANNOUNCEMENTS
+  QA
+  DISCUSSION
+}
+
+enum CommunityMessageStatus {
+  ACTIVE
+  HIDDEN
+  DELETED
+}
+
+enum CommunityModerationActionType {
+  PIN
+  UNPIN
+  MARK_ANSWER
+  UNMARK_ANSWER
+  REMOVE
+  RESTORE
+  LOCK_THREAD
+  UNLOCK_THREAD
+}
+
+// ============ SUBSCRIPTION & PAYMENT ENUMS ============
+
+enum SubscriptionTier {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+  TRIALING
+  INCOMPLETE
+  PAUSED
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+// ============ VERIFICATION & TOKEN ENUMS ============
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  MFA_SETUP
+}
+
+enum MfaMethod {
+  TOTP // Time-based OTP (Google Authenticator, Authy, etc.)
+  SMS // SMS-based (Twilio, etc.) - future
+  EMAIL // Email-based OTP - future
+}
+
+// ============ MODELS ============
+
+model User {
+  id               String           @id @default(cuid())
+  email            String           @unique
+  passwordHash     String           @map("password_hash")
+  name             String
+  avatarUrl        String?          @map("avatar_url")
+  role             Role             @default(STUDENT)
+  status           UserStatus       @default(PENDING_VERIFICATION)
+  // MFA fields - provider-agnostic (works with any TOTP app)
+  mfaEnabled       Boolean          @default(false) @map("mfa_enabled")
+  mfaSecret        String?          @map("mfa_secret") // Encrypted TOTP secret
+  mfaMethod        MfaMethod?       @map("mfa_method")
+  // Subscription tier cache (denormalized for quick access)
+  subscriptionTier SubscriptionTier @default(FREE) @map("subscription_tier")
+  locale           String           @default("en")
+  timezone         String           @default("UTC")
+  emailVerifiedAt  DateTime?        @map("email_verified_at")
+  lastLoginAt      DateTime?        @map("last_login_at")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  instructorProfile          InstructorProfile?
+  coursesAsInstructor        CourseInstructor[]
+  coursesCreated             Course[]                    @relation("CourseCreator")
+  materialsUploaded          Material[]
+  enrollments                Enrollment[]
+  accessCodesCreated         AccessCode[]
+  accessCodeUsages           AccessCodeUsage[]
+  liveClassesAsInstructor    LiveClass[]                 @relation("LiveClassInstructor")
+  liveClassAttendances       LiveClassAttendee[]
+  blogPosts                  BlogPost[]
+  refreshTokens              RefreshToken[]
+  communityMessages          CommunityMessage[]
+  communityFlags             CommunityMessageFlag[]      @relation("CommunityFlagReporter")
+  communityFlagResolutions   CommunityMessageFlag[]      @relation("CommunityFlagResolver")
+  communityModerationActions CommunityModerationAction[] @relation("CommunityModerationActor")
+  // Subscription & Payment relations
+  subscriptions              Subscription[]
+  paymentTransactions        PaymentTransaction[]
+  paymentCustomers           PaymentCustomer[]
+  // Session & Security relations
+  sessions                   Session[]
+  verificationTokens         VerificationToken[]
+  mfaBackupCodes             MfaBackupCode[]
+  // Video & Code relations
+  videoAssets                VideoAsset[]
+  codeSubmissions            CodeSubmission[]
+  lessonProgress             LessonProgress[]
+  studentProgress            StudentProgress[]
+  // Streaming relations
+  streamsAsInstructor        CourseStream[]
+  streamViewers              StreamViewer[]
+  // Skill tree relations
+  skillTreesCreated          SkillTree[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model InstructorProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique @map("user_id")
+  bio            String?
+  specialization String?
+  credentials    String?
+  socialLinks    Json?    @map("social_links")
+  rating         Float    @default(0)
+  ratingCount    Int      @default(0) @map("rating_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("instructor_profiles")
+}
+
+model Category {
+  id           String   @id @default(cuid())
+  parentId     String?  @map("parent_id")
+  name         String
+  description  String?
+  slug         String   @unique
+  iconUrl      String?  @map("icon_url")
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Self-referencing relation
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+
+  // Other relations
+  translations CategoryTranslation[]
+  courses      Course[]
+  blogPosts    BlogPost[]
+
+  @@map("categories")
+}
+
+model CategoryTranslation {
+  id          String   @id @default(cuid())
+  categoryId  String   @map("category_id")
+  locale      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, locale])
+  @@map("category_translations")
+}
+
+model Course {
+  id            String       @id @default(cuid())
+  title         String
+  description   String?
+  slug          String       @unique
+  coverImageUrl String?      @map("cover_image_url")
+  language      String       @default("en")
+  level         CourseLevel  @default(BEGINNER)
+  status        CourseStatus @default(DRAFT)
+  pricingModel  PricingModel @default(FREE) @map("pricing_model")
+  price         Float?
+  isFeatured    Boolean      @default(false) @map("is_featured")
+  categoryId    String?      @map("category_id")
+  createdById   String       @map("created_by_id")
+  approvedAt    DateTime?    @map("approved_at")
+  publishedAt   DateTime?    @map("published_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  category          Category?          @relation(fields: [categoryId], references: [id])
+  createdBy         User               @relation("CourseCreator", fields: [createdById], references: [id])
+  instructors       CourseInstructor[]
+  sections          CourseSection[]
+  enrollments       Enrollment[]
+  accessCodes       AccessCode[]       @relation("CourseAccessCodes")
+  liveClasses       LiveClass[]
+  communityChannels CommunityChannel[]
+  communityMessages CommunityMessage[]
+  studentProgress   StudentProgress[]
+  streams           CourseStream[]
+
+  @@map("courses")
+}
+
+model CourseInstructor {
+  id         String   @id @default(cuid())
+  courseId   String   @map("course_id")
+  userId     String   @map("user_id")
+  isPrimary  Boolean  @default(false) @map("is_primary")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId])
+  @@map("course_instructors")
+}
+
+model CourseSection {
+  id          String   @id @default(cuid())
+  courseId    String   @map("course_id")
+  title       String
+  description String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@map("course_sections")
+}
+
+model Lesson {
+  id            String      @id @default(cuid())
+  sectionId     String      @map("section_id")
+  title         String
+  description   String?
+  contentType   ContentType @map("content_type")
+  materialId    String?     @map("material_id")
+  isFreePreview Boolean     @default(false) @map("is_free_preview")
+  sortOrder     Int         @default(0) @map("sort_order")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  section       CourseSection    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  material      Material?        @relation(fields: [materialId], references: [id])
+  codeExercises CodeExercise[]
+  progress      LessonProgress[]
+
+  @@map("lessons")
+}
+
+model Material {
+  id             String       @id @default(cuid())
+  type           MaterialType
+  title          String
+  description    String?
+  fileUrl        String?      @map("file_url")
+  // Video source configuration (provider-agnostic)
+  videoAssetId   String?      @map("video_asset_id") // Reference to VideoAsset
+  // YouTube as secondary source (optional fallback)
+  youtubeUrl     String?      @map("youtube_url")
+  youtubeEnabled Boolean      @default(false) @map("youtube_enabled")
+  duration       Int? // Duration in seconds for videos
+  uploadedById   String       @map("uploaded_by_id")
+  version        Int          @default(1)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  uploadedBy  User         @relation(fields: [uploadedById], references: [id])
+  videoAsset  VideoAsset?  @relation(fields: [videoAssetId], references: [id])
+  lessons     Lesson[]
+  accessCodes AccessCode[] @relation("VideoAccessCodes")
+
+  @@map("materials")
+}
+
+// ============ VIDEO ASSET MANAGEMENT ============
+// Provider-agnostic video storage - works with any video provider
+
+enum VideoAssetStatus {
+  PREPARING // Upload URL generated, waiting for upload
+  UPLOADING // Upload in progress
+  PROCESSING // Transcoding/encoding
+  READY // Ready for playback
+  ERRORED // Processing failed
+  DELETED // Soft deleted
+}
+
+model VideoAsset {
+  id               String           @id @default(cuid())
+  // Provider information (easy to switch providers)
+  provider         String // 'mux', 'cloudflare', 'aws-ivs', 'vimeo', 'bunny'
+  providerAssetId  String           @map("provider_asset_id")
+  // Asset details
+  title            String
+  description      String?
+  status           VideoAssetStatus @default(PREPARING)
+  // Video metadata (populated after processing)
+  duration         Int? // Duration in seconds
+  aspectRatio      String?          @map("aspect_ratio") // e.g., '16:9'
+  resolutions      Json? // Array of available resolutions
+  thumbnails       Json? // { small, medium, large, animated }
+  thumbnailVttUrl  String?          @map("thumbnail_vtt_url")
+  sizeBytes        BigInt?          @map("size_bytes")
+  // Security settings
+  drmEnabled       Boolean          @default(false) @map("drm_enabled")
+  watermarkEnabled Boolean          @default(false) @map("watermark_enabled")
+  signedUrlsOnly   Boolean          @default(true) @map("signed_urls_only")
+  allowedDomains   Json?            @map("allowed_domains") // Array of domains
+  // Organization
+  folderId         String?          @map("folder_id")
+  uploadedById     String           @map("uploaded_by_id")
+  // Provider-specific data (for debugging, advanced features)
+  providerMetadata Json?            @map("provider_metadata")
+  // Error tracking
+  errorMessage     String?          @map("error_message")
+  // Timestamps
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  processedAt      DateTime?        @map("processed_at")
+
+  uploadedBy   User               @relation(fields: [uploadedById], references: [id])
+  folder       VideoFolder?       @relation(fields: [folderId], references: [id])
+  subtitles    VideoSubtitle[]
+  materials    Material[]
+  playbackLogs VideoPlaybackLog[]
+
+  @@unique([provider, providerAssetId])
+  @@index([status])
+  @@index([uploadedById])
+  @@map("video_assets")
+}
+
+model VideoFolder {
+  id          String   @id @default(cuid())
+  name        String
+  parentId    String?  @map("parent_id")
+  createdById String   @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  parent   VideoFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children VideoFolder[] @relation("FolderHierarchy")
+  assets   VideoAsset[]
+
+  @@map("video_folders")
+}
+
+model VideoSubtitle {
+  id            String   @id @default(cuid())
+  videoAssetId  String   @map("video_asset_id")
+  language      String // ISO 639-1 code (e.g., 'en', 'ar', 'es')
+  label         String // Display label (e.g., 'English', 'Arabic')
+  url           String // URL to subtitle file
+  format        String   @default("vtt") // 'vtt' or 'srt'
+  autoGenerated Boolean  @default(false) @map("auto_generated")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  videoAsset VideoAsset @relation(fields: [videoAssetId], references: [id], onDelete: Cascade)
+
+  @@unique([videoAssetId, language])
+  @@map("video_subtitles")
+}
+
+// Video playback tracking for analytics and security
+model VideoPlaybackLog {
+  id              String   @id @default(cuid())
+  videoAssetId    String   @map("video_asset_id")
+  userId          String   @map("user_id")
+  sessionId       String   @map("session_id")
+  // Playback data
+  startPosition   Int      @default(0) @map("start_position") // seconds
+  endPosition     Int      @map("end_position") // seconds
+  watchedDuration Int      @map("watched_duration") // actual seconds watched
+  completed       Boolean  @default(false)
+  // Security/tracking
+  ipAddress       String?  @map("ip_address")
+  userAgent       String?  @map("user_agent")
+  deviceType      String?  @map("device_type") // 'desktop', 'mobile', 'tablet', 'tv'
+  country         String? // ISO country code
+  // Quality
+  quality         String? // '1080p', '720p', etc.
+  bufferingEvents Int      @default(0) @map("buffering_events")
+  // Timestamps
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  videoAsset VideoAsset @relation(fields: [videoAssetId], references: [id], onDelete: Cascade)
+
+  @@index([videoAssetId, createdAt])
+  @@index([userId, createdAt])
+  @@map("video_playback_logs")
+}
+
+// ============ CODE EXECUTION ============
+// For programming courses with code editor
+
+enum CodeSubmissionStatus {
+  QUEUED
+  PROCESSING
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT_EXCEEDED
+  MEMORY_LIMIT_EXCEEDED
+  COMPILATION_ERROR
+  RUNTIME_ERROR
+  INTERNAL_ERROR
+}
+
+model CodeExercise {
+  id           String   @id @default(cuid())
+  lessonId     String   @map("lesson_id")
+  title        String
+  description  String // Markdown
+  instructions String // Detailed instructions (Markdown)
+  languageId   String   @map("language_id") // e.g., 'python', 'javascript'
+  starterCode  String?  @map("starter_code")
+  solutionCode String?  @map("solution_code") // Hidden from students
+  hints        Json? // Array of hint strings
+  difficulty   String   @default("medium") // 'easy', 'medium', 'hard'
+  points       Int      @default(10)
+  timeLimit    Int      @default(5) @map("time_limit") // seconds
+  memoryLimit  Int      @default(256000) @map("memory_limit") // KB
+  sortOrder    Int      @default(0) @map("sort_order")
+  isRequired   Boolean  @default(false) @map("is_required") // For course completion
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  lesson      Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  testCases   CodeTestCase[]
+  submissions CodeSubmission[]
+
+  @@index([lessonId])
+  @@map("code_exercises")
+}
+
+model CodeTestCase {
+  id         String   @id @default(cuid())
+  exerciseId String   @map("exercise_id")
+  name       String? // Optional description
+  input      String // stdin
+  expected   String // Expected stdout
+  points     Int      @default(1)
+  isHidden   Boolean  @default(false) @map("is_hidden") // Hidden from students
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  exercise CodeExercise     @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  results  CodeTestResult[]
+
+  @@map("code_test_cases")
+}
+
+model CodeSubmission {
+  id            String               @id @default(cuid())
+  exerciseId    String               @map("exercise_id")
+  userId        String               @map("user_id")
+  code          String // Submitted source code
+  languageId    String               @map("language_id")
+  status        CodeSubmissionStatus @default(QUEUED)
+  // Provider info (for debugging)
+  provider      String? // 'judge0', 'piston', etc.
+  providerJobId String?              @map("provider_job_id")
+  // Results
+  stdout        String?
+  stderr        String?
+  compileOutput String?              @map("compile_output")
+  exitCode      Int?                 @map("exit_code")
+  executionTime Float?               @map("execution_time") // seconds
+  memoryUsed    Int?                 @map("memory_used") // KB
+  // Scoring
+  testsPassed   Int                  @default(0) @map("tests_passed")
+  testsTotal    Int                  @default(0) @map("tests_total")
+  pointsEarned  Int                  @default(0) @map("points_earned")
+  pointsTotal   Int                  @default(0) @map("points_total")
+  // Timestamps
+  createdAt     DateTime             @default(now()) @map("created_at")
+  completedAt   DateTime?            @map("completed_at")
+
+  exercise    CodeExercise     @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testResults CodeTestResult[]
+
+  @@index([exerciseId, userId])
+  @@index([userId, createdAt])
+  @@map("code_submissions")
+}
+
+model CodeTestResult {
+  id            String               @id @default(cuid())
+  submissionId  String               @map("submission_id")
+  testCaseId    String               @map("test_case_id")
+  passed        Boolean
+  status        CodeSubmissionStatus
+  actualOutput  String?              @map("actual_output")
+  executionTime Float?               @map("execution_time") // seconds
+  memoryUsed    Int?                 @map("memory_used") // KB
+  errorMessage  String?              @map("error_message")
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  submission CodeSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  testCase   CodeTestCase   @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, testCaseId])
+  @@map("code_test_results")
+}
+
+model Enrollment {
+  id              String           @id @default(cuid())
+  userId          String           @map("user_id")
+  courseId        String           @map("course_id")
+  status          EnrollmentStatus @default(ACTIVE)
+  progressPercent Float            @default(0) @map("progress_percent")
+  paymentStatus   PaymentStatus    @default(FREE) @map("payment_status")
+  enrolledAt      DateTime         @default(now()) @map("enrolled_at")
+  completedAt     DateTime?        @map("completed_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model LessonProgress {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  lessonId    String   @map("lesson_id")
+  completedAt DateTime @default(now()) @map("completed_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@map("lesson_progress")
+}
+
+model AccessCode {
+  id                 String           @id @default(cuid())
+  code               String           @unique
+  type               AccessCodeType
+  courseId           String?          @map("course_id")
+  materialId         String?          @map("material_id")
+  isSingleUse        Boolean          @default(true) @map("is_single_use")
+  maxRedemptions     Int              @default(1) @map("max_redemptions")
+  currentRedemptions Int              @default(0) @map("current_redemptions")
+  expiresAt          DateTime?        @map("expires_at")
+  status             AccessCodeStatus @default(ACTIVE)
+  createdById        String           @map("created_by_id")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  createdBy User              @relation(fields: [createdById], references: [id])
+  course    Course?           @relation("CourseAccessCodes", fields: [courseId], references: [id])
+  material  Material?         @relation("VideoAccessCodes", fields: [materialId], references: [id])
+  usages    AccessCodeUsage[]
+
+  @@map("access_codes")
+}
+
+model AccessCodeUsage {
+  id         String   @id @default(cuid())
+  codeId     String   @map("code_id")
+  userId     String   @map("user_id")
+  redeemedAt DateTime @default(now()) @map("redeemed_at")
+
+  code AccessCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([codeId, userId])
+  @@map("access_code_usages")
+}
+
+model LiveClass {
+  id               String          @id @default(cuid())
+  title            String
+  description      String?
+  courseId         String?         @map("course_id")
+  instructorId     String          @map("instructor_id")
+  startAt          DateTime        @map("start_at")
+  durationMinutes  Int             @default(60) @map("duration_minutes")
+  timezone         String          @default("UTC")
+  status           LiveClassStatus @default(UPCOMING)
+  capacity         Int?
+  isRecurring      Boolean         @default(false) @map("is_recurring")
+  recurrenceRule   String?         @map("recurrence_rule")
+  // Live stream provider integration (provider-agnostic)
+  streamProvider   String?         @map("stream_provider") // 'mux-live', 'aws-ivs', 'agora', etc.
+  providerStreamId String?         @map("provider_stream_id")
+  streamKey        String?         @map("stream_key") // Sensitive - for instructor
+  rtmpUrl          String?         @map("rtmp_url")
+  playbackHlsUrl   String?         @map("playback_hls_url")
+  // Legacy/external meeting support
+  meetingUrl       String?         @map("meeting_url") // For Zoom/Google Meet fallback
+  recordingUrl     String?         @map("recording_url")
+  // Recording as VideoAsset (after stream ends)
+  recordingAssetId String?         @map("recording_asset_id")
+  // Analytics
+  peakViewers      Int?            @map("peak_viewers")
+  totalViewers     Int?            @map("total_viewers")
+  actualStartAt    DateTime?       @map("actual_start_at")
+  actualEndAt      DateTime?       @map("actual_end_at")
+  // Timestamps
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  course     Course?             @relation(fields: [courseId], references: [id])
+  instructor User                @relation("LiveClassInstructor", fields: [instructorId], references: [id])
+  attendees  LiveClassAttendee[]
+
+  @@map("live_classes")
+}
+
+model LiveClassAttendee {
+  id           String    @id @default(cuid())
+  liveClassId  String    @map("live_class_id")
+  userId       String    @map("user_id")
+  joinedAt     DateTime? @map("joined_at")
+  leftAt       DateTime? @map("left_at")
+  registeredAt DateTime  @default(now()) @map("registered_at")
+
+  liveClass LiveClass @relation(fields: [liveClassId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([liveClassId, userId])
+  @@map("live_class_attendees")
+}
+
+model CommunityChannel {
+  id        String               @id @default(cuid())
+  courseId  String               @map("course_id")
+  name      String
+  slug      String
+  type      CommunityChannelType
+  isLocked  Boolean              @default(false) @map("is_locked")
+  createdAt DateTime             @default(now()) @map("created_at")
+  updatedAt DateTime             @updatedAt @map("updated_at")
+
+  course   Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  messages CommunityMessage[]
+
+  @@unique([courseId, slug])
+  @@map("community_channels")
+}
+
+model CommunityMessage {
+  id        String                 @id @default(cuid())
+  courseId  String                 @map("course_id")
+  channelId String                 @map("channel_id")
+  authorId  String                 @map("author_id")
+  parentId  String?                @map("parent_id")
+  body      String
+  status    CommunityMessageStatus @default(ACTIVE)
+  isPinned  Boolean                @default(false) @map("is_pinned")
+  isAnswer  Boolean                @default(false) @map("is_answer")
+  isLocked  Boolean                @default(false) @map("is_locked")
+  clientId  String?                @map("client_id")
+  createdAt DateTime               @default(now()) @map("created_at")
+  updatedAt DateTime               @updatedAt @map("updated_at")
+
+  course            Course                      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  channel           CommunityChannel            @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  author            User                        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent            CommunityMessage?           @relation("CommunityThread", fields: [parentId], references: [id])
+  replies           CommunityMessage[]          @relation("CommunityThread")
+  flags             CommunityMessageFlag[]
+  moderationActions CommunityModerationAction[]
+
+  @@index([courseId, channelId, createdAt])
+  @@index([parentId, createdAt])
+  @@map("community_messages")
+}
+
+model CommunityMessageFlag {
+  id           String    @id @default(cuid())
+  messageId    String    @map("message_id")
+  reporterId   String    @map("reporter_id")
+  reason       String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  resolvedAt   DateTime? @map("resolved_at")
+  resolvedById String?   @map("resolved_by_id")
+
+  message    CommunityMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reporter   User             @relation("CommunityFlagReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  resolvedBy User?            @relation("CommunityFlagResolver", fields: [resolvedById], references: [id])
+
+  @@unique([messageId, reporterId])
+  @@map("community_message_flags")
+}
+
+model CommunityModerationAction {
+  id        String                        @id @default(cuid())
+  messageId String                        @map("message_id")
+  actorId   String                        @map("actor_id")
+  action    CommunityModerationActionType
+  note      String?
+  createdAt DateTime                      @default(now()) @map("created_at")
+
+  message CommunityMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  actor   User             @relation("CommunityModerationActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@map("community_moderation_actions")
+}
+
+model BlogPost {
+  id              String         @id @default(cuid())
+  title           String
+  slug            String         @unique
+  body            String
+  excerpt         String?
+  authorId        String         @map("author_id")
+  categoryId      String?        @map("category_id")
+  status          BlogPostStatus @default(DRAFT)
+  metaTitle       String?        @map("meta_title")
+  metaDescription String?        @map("meta_description")
+  coverImageUrl   String?        @map("cover_image_url")
+  isPinned        Boolean        @default(false) @map("is_pinned")
+  publishedAt     DateTime?      @map("published_at")
+  scheduledAt     DateTime?      @map("scheduled_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  author   User          @relation(fields: [authorId], references: [id])
+  category Category?     @relation(fields: [categoryId], references: [id])
+  tags     BlogPostTag[]
+
+  @@map("blog_posts")
+}
+
+model BlogTag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  posts BlogPostTag[]
+
+  @@map("blog_tags")
+}
+
+model BlogPostTag {
+  postId String @map("post_id")
+  tagId  String @map("tag_id")
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("blog_post_tags")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?  @map("user_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+// ============ SUBSCRIPTION & PAYMENT MODELS ============
+// Provider-agnostic: externalId + provider + metadata pattern
+
+model SubscriptionPlan {
+  id           String           @id @default(cuid())
+  name         String // "Basic Monthly", "Pro Yearly"
+  tier         SubscriptionTier
+  billingCycle BillingCycle     @map("billing_cycle")
+  price        Float // Price in cents/smallest currency unit
+  currency     String           @default("USD")
+  features     Json // Array of feature strings
+  limits       Json // { "executions_per_day": 100, "storage_mb": 1000 }
+  isActive     Boolean          @default(true) @map("is_active")
+  trialDays    Int              @default(0) @map("trial_days")
+  sortOrder    Int              @default(0) @map("sort_order")
+  // Provider-specific external IDs stored as JSON: { "stripe": "price_xxx", "paypal": "P-xxx" }
+  externalIds  Json?            @map("external_ids")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+
+  @@map("subscription_plans")
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  userId             String             @map("user_id")
+  planId             String             @map("plan_id")
+  status             SubscriptionStatus @default(ACTIVE)
+  // Provider-agnostic: store which provider and their subscription ID
+  provider           String? // "stripe", "paypal", "paddle", "manual"
+  externalId         String?            @map("external_id") // Provider's subscription ID
+  currentPeriodStart DateTime           @map("current_period_start")
+  currentPeriodEnd   DateTime           @map("current_period_end")
+  cancelAtPeriodEnd  Boolean            @default(false) @map("cancel_at_period_end")
+  cancelledAt        DateTime?          @map("cancelled_at")
+  trialEndsAt        DateTime?          @map("trial_ends_at")
+  // Provider-specific metadata (webhook data, etc.)
+  metadata           Json?
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan         SubscriptionPlan     @relation(fields: [planId], references: [id])
+  transactions PaymentTransaction[]
+
+  @@map("subscriptions")
+}
+
+model PaymentTransaction {
+  id             String            @id @default(cuid())
+  userId         String            @map("user_id")
+  subscriptionId String?           @map("subscription_id")
+  amount         Float // Amount in cents/smallest currency unit
+  currency       String            @default("USD")
+  status         TransactionStatus @default(PENDING)
+  // Provider-agnostic
+  provider       String // "stripe", "paypal", "paddle", "manual"
+  externalId     String?           @map("external_id") // Provider's transaction/payment ID
+  // Generic description for any payment type
+  description    String?
+  // Provider-specific data (invoice URL, receipt, etc.)
+  metadata       Json?
+  failureReason  String?           @map("failure_reason")
+  refundedAt     DateTime?         @map("refunded_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([externalId])
+  @@map("payment_transactions")
+}
+
+// Store customer IDs for each payment provider
+model PaymentCustomer {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  provider   String // "stripe", "paypal", "paddle"
+  externalId String   @map("external_id") // Provider's customer ID
+  metadata   Json? // Provider-specific customer data
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@unique([provider, externalId])
+  @@map("payment_customers")
+}
+
+// ============ SESSION MANAGEMENT ============
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  token        String   @unique // Session token (different from JWT)
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  device       String? // Parsed device info
+  location     String? // Geolocated location
+  lastActiveAt DateTime @default(now()) @map("last_active_at")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ============ VERIFICATION TOKENS ============
+// Provider-agnostic tokens for email verification, password reset, etc.
+
+model VerificationToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  type      TokenType
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("verification_tokens")
+}
+
+// ============ MFA / TWO-FACTOR AUTHENTICATION ============
+// Provider-agnostic: works with any TOTP app (Google Auth, Authy, etc.)
+
+model MfaBackupCode {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  codeHash  String    @map("code_hash") // Hashed backup code
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("mfa_backup_codes")
+}
+
+// ============ ANALYTICS MODELS ============
+// Simplified analytics - no Kafka, no Flink, just PostgreSQL
+
+enum AnalyticsEventType {
+  SESSION_START
+  SESSION_END
+  COURSE_ENROLL
+  COURSE_UNENROLL
+  COURSE_COMPLETE
+  LESSON_START
+  LESSON_COMPLETE
+  VIDEO_PLAY
+  VIDEO_PAUSE
+  VIDEO_SEEK
+  VIDEO_COMPLETE
+  QUIZ_START
+  QUIZ_ANSWER
+  QUIZ_SUBMIT
+  ASSIGNMENT_START
+  ASSIGNMENT_SUBMIT
+}
+
+model StudentActivityEvent {
+  id             String             @id @default(cuid())
+  studentId      String             @map("student_id")
+  courseId       String?            @map("course_id")
+  lessonId       String?            @map("lesson_id")
+  eventType      AnalyticsEventType @map("event_type")
+  eventTimestamp DateTime           @default(now()) @map("event_timestamp")
+  sessionId      String             @map("session_id")
+  eventData      Json?              @map("event_data") // Flexible payload
+  deviceType     String?            @map("device_type")
+  browser        String?
+  os             String?
+  ipAddress      String?            @map("ip_address")
+  createdAt      DateTime           @default(now()) @map("created_at")
+
+  @@index([studentId, eventTimestamp])
+  @@index([courseId, eventTimestamp])
+  @@index([eventType, eventTimestamp])
+  @@index([eventTimestamp]) // For cleanup queries
+  @@map("student_activity_events")
+}
+
+enum StudentProgressStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+model StudentProgress {
+  id                String                @id @default(cuid())
+  studentId         String                @map("student_id")
+  courseId          String                @map("course_id")
+  completionPct     Float                 @default(0) @map("completion_pct")
+  lessonsCompleted  Int                   @default(0) @map("lessons_completed")
+  totalLessons      Int                   @default(0) @map("total_lessons")
+  timeSpentSeconds  Int                   @default(0) @map("time_spent_seconds")
+  lastActivityAt    DateTime?             @map("last_activity_at")
+  currentStreakDays Int                   @default(0) @map("current_streak_days")
+  longestStreakDays Int                   @default(0) @map("longest_streak_days")
+  lastStreakDate    DateTime?             @map("last_streak_date")
+  status            StudentProgressStatus @default(ACTIVE)
+  startedAt         DateTime              @default(now()) @map("started_at")
+  completedAt       DateTime?             @map("completed_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@index([studentId, status])
+  @@index([courseId, status])
+  @@index([lastActivityAt])
+  @@map("student_progress")
+}
+
+model StudentVideoProgress {
+  id             String   @id @default(cuid())
+  studentId      String   @map("student_id")
+  videoId        String   @map("video_id")
+  courseId       String   @map("course_id")
+  lessonId       String   @map("lesson_id")
+  watchPct       Float    @default(0) @map("watch_pct")
+  secondsWatched Int      @default(0) @map("seconds_watched")
+  videoDuration  Int      @default(0) @map("video_duration")
+  completed      Boolean  @default(false)
+  lastPosition   Int      @default(0) @map("last_position")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([studentId, videoId])
+  @@index([studentId, courseId])
+  @@map("student_video_progress")
+}
+
+enum AssessmentType {
+  QUIZ
+  ASSIGNMENT
+  EXAM
+}
+
+enum AssessmentAttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+  LATE
+}
+
+model AssessmentAttempt {
+  id               String                  @id @default(cuid())
+  studentId        String                  @map("student_id")
+  assessmentId     String                  @map("assessment_id")
+  assessmentType   AssessmentType          @map("assessment_type")
+  courseId         String                  @map("course_id")
+  attemptNumber    Int                     @default(1) @map("attempt_number")
+  score            Float?
+  maxScore         Float?                  @map("max_score")
+  isPassed         Boolean?                @map("is_passed")
+  timeSpentSeconds Int?                    @map("time_spent_seconds")
+  status           AssessmentAttemptStatus @default(IN_PROGRESS)
+  isLate           Boolean                 @default(false) @map("is_late")
+  answers          Json? // Store answers as JSON
+  submittedAt      DateTime?               @map("submitted_at")
+  gradedAt         DateTime?               @map("graded_at")
+  createdAt        DateTime                @default(now()) @map("created_at")
+
+  @@unique([studentId, assessmentId, attemptNumber])
+  @@index([studentId, assessmentType])
+  @@index([courseId, submittedAt])
+  @@map("assessment_attempts")
+}
+
+model StudentDailyStat {
+  id               String   @id @default(cuid())
+  studentId        String   @map("student_id")
+  statDate         DateTime @map("stat_date") @db.Date
+  sessionsCount    Int      @default(0) @map("sessions_count")
+  totalTimeSeconds Int      @default(0) @map("total_time_seconds")
+  lessonsCompleted Int      @default(0) @map("lessons_completed")
+  videosWatched    Int      @default(0) @map("videos_watched")
+  quizzesAttempted Int      @default(0) @map("quizzes_attempted")
+  wasActive        Boolean  @default(false) @map("was_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@unique([studentId, statDate])
+  @@index([studentId, statDate])
+  @@index([statDate])
+  @@map("student_daily_stats")
+}
+
+// ============ STREAMING MODELS ============
+// ZegoCloud live streaming for courses
+
+enum StreamStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+}
+
+model CourseStream {
+  id           String       @id @default(cuid())
+  roomId       String       @unique @map("room_id")
+  courseId     String       @map("course_id")
+  instructorId String       @map("instructor_id")
+  title        String
+  status       StreamStatus @default(SCHEDULED)
+  scheduledAt  DateTime?    @map("scheduled_at")
+  startedAt    DateTime?    @map("started_at")
+  endedAt      DateTime?    @map("ended_at")
+  viewerCount  Int          @default(0) @map("viewer_count")
+  streamId     String?      @map("stream_id")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  course     Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructor User           @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  viewers    StreamViewer[]
+
+  @@index([courseId, status])
+  @@index([status])
+  @@map("course_streams")
+}
+
+model StreamViewer {
+  id         String    @id @default(cuid())
+  streamId   String    @map("stream_id")
+  userId     String    @map("user_id")
+  joinedAt   DateTime  @default(now()) @map("joined_at")
+  rejoinedAt DateTime? @map("rejoined_at")
+  leftAt     DateTime? @map("left_at")
+
+  stream CourseStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([streamId, userId])
+  @@index([streamId, userId])
+  @@index([userId])
+  @@map("stream_viewers")
+}
+
+// ============ SKILL TREE MODELS ============
+// RPG-style skill trees for career paths
+
+model SkillTree {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  category    String // programming, design, trading
+  published   Boolean  @default(false)
+  createdById String   @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy User        @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  nodes     SkillNode[]
+
+  @@index([category])
+  @@index([published])
+  @@map("skill_trees")
+}
+
+model SkillNode {
+  id               String @id @default(cuid())
+  skillTreeId      String @map("skill_tree_id")
+  name             String
+  description      String
+  icon             String
+  positionX        Float  @map("position_x")
+  positionY        Float  @map("position_y")
+  prerequisites    String // JSON array of node IDs
+  unlockConditions String @map("unlock_conditions") // JSON
+  resources        String // JSON
+  metadata         String // JSON
+
+  skillTree SkillTree @relation(fields: [skillTreeId], references: [id], onDelete: Cascade)
+
+  @@index([skillTreeId])
+  @@map("skill_nodes")
+}

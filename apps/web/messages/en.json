@@ -1,0 +1,344 @@
+{
+  "metadata": {
+    "title": "FIS Learn - E-Learning Platform",
+    "description": "Your gateway to quality online education. Learn from expert instructors and advance your career."
+  },
+  "navigation": {
+    "home": "Home",
+    "courses": "Courses",
+    "about": "About",
+    "blog": "Blog",
+    "contact": "Contact",
+    "login": "Login",
+    "register": "Register",
+    "dashboard": "Dashboard",
+    "logout": "Logout"
+  },
+  "hero": {
+    "title": "Learn Without Limits",
+    "titleHighlight": "World-Class",
+    "subtitle": "Access world-class courses from expert instructors. Start your learning journey today.",
+    "ctaPrimary": "Start Learning Now",
+    "ctaSecondary": "How It Works",
+    "badge": "New: Design Systems Course 2.0",
+    "students": "from 10,000+ students",
+    "liveNow": "Live Now",
+    "category": "Product Design",
+    "courseTitle": "Advanced UX Strategy",
+    "courseDescription": "Master the principles of user-centered design with Sarah Chen, Lead Designer at TechFlow.",
+    "instructor": "Sarah Chen",
+    "joinClass": "Join Class",
+    "completed": "Course Completed",
+    "xpEarned": "+500 XP Earned",
+    "peers": "120+ Peers",
+    "learningWithYou": "Learning with you"
+  },
+  "stats": {
+    "students": "Students",
+    "courses": "Courses",
+    "instructors": "Instructors",
+    "satisfaction": "Satisfaction Rate"
+  },
+  "features": {
+    "title": "Why Choose Us",
+    "expertInstructors": {
+      "title": "Expert Instructors",
+      "description": "Learn from industry professionals with real-world experience"
+    },
+    "flexibleLearning": {
+      "title": "Flexible Learning",
+      "description": "Study at your own pace, anytime, anywhere"
+    },
+    "certificates": {
+      "title": "Recognized Certificates",
+      "description": "Earn certificates to showcase your skills"
+    },
+    "community": {
+      "title": "Community Support",
+      "description": "Join a community of learners and get help when you need it"
+    }
+  },
+  "courses": {
+    "title": "Explore Our Premium Courses",
+    "subtitle": "Master new skills with industry-leading instructors. From coding to design, find the perfect course to elevate your career.",
+    "viewAll": "View All Courses",
+    "enroll": "Enroll Now",
+    "free": "Free",
+    "lessons": "lessons",
+    "students": "students",
+    "rating": "rating",
+    "searchPlaceholder": "Search courses, instructors...",
+    "searchButton": "Search",
+    "filters": "Filters",
+    "all": "All",
+    "noResults": "No courses found in this category.",
+    "error": "Failed to load courses. Please try again later."
+  },
+  "cta": {
+    "title": "Ready to start your learning journey?",
+    "subtitle": "Join over 10,000 students achieving their goals with our expert-led courses.",
+    "button": "Get Started for Free",
+    "dashboard": "Go to Dashboard",
+    "pricing": "View Pricing",
+    "no-credit-card": "No credit card required",
+    "free-trial": "14-day free trial",
+    "cancel-anytime": "Cancel anytime"
+  },
+  "home": {
+    "features": {
+      "ownPace": {
+        "title": "Learn at Your Own Pace",
+        "description": "Life gets busy. That's why our courses are on-demand and self-paced. Pause, rewind, and rewatch as many times as you need to master the material.",
+        "points": [
+          "Lifetime access to all content",
+          "Downloadable resources for offline use",
+          "Mobile-friendly platform"
+        ],
+        "learnMore": "Learn more about {feature}"
+      },
+      "mentorship": {
+        "title": "Expert Mentorship & Feedback",
+        "description": "Don't learn in a vacuum. Get personalized feedback on your code and designs from industry veterans who have walked the path before you.",
+        "points": [
+          "Weekly Q&A sessions",
+          "Code reviews within 24 hours",
+          "Dedicated mentorship channels"
+        ],
+        "learnMore": "Learn more about {feature}"
+      },
+      "projectBased": {
+        "title": "Project-Based Curriculum",
+        "description": "Theory is important, but practice is everything. Build real-world projects that you can add to your portfolio and show off to future employers.",
+        "points": [
+          "Build 10+ portfolio-ready projects",
+          "Real-world scenarios and case studies",
+          "Deploy your work to production"
+        ],
+        "learnMore": "Learn more about {feature}"
+      }
+    },
+    "testimonials": {
+      "title": "Loved by Students",
+      "subtitle": "Don't just take our word for it. Here's what our community has to say about their learning experience.",
+      "alex": {
+        "content": "The best investment I've made in my career. The project-based approach helped me build a portfolio that got me hired at a top tech company.",
+        "author": "Alex Johnson",
+        "role": "Frontend Developer at Vercel"
+      },
+      "maria": {
+        "content": "I was stuck in tutorial hell for months until I found this platform. The mentorship and structured learning paths gave me the direction I needed.",
+        "author": "Maria Garcia",
+        "role": "UX Designer at Airbnb"
+      },
+      "david": {
+        "content": "The quality of instruction is unmatched. Complex concepts are broken down into digestible lessons. Highly recommended for anyone serious about coding.",
+        "author": "David Chen",
+        "role": "Full Stack Engineer at Stripe"
+      }
+    }
+  },
+  "footer": {
+    "tagline": "Empowering learners worldwide with quality online education.",
+    "blog": "Blog",
+    "platform": "Platform",
+    "browseCourses": "Browse Courses",
+    "becomeInstructor": "Become an Instructor",
+    "pricing": "Pricing",
+    "forEnterprise": "For Enterprise",
+    "company": "Company",
+    "aboutUs": "About Us",
+    "careers": "Careers",
+    "press": "Press",
+    "support": "Support",
+    "contactUs": "Contact Us",
+    "helpCenter": "Help Center",
+    "faq": "FAQ",
+    "community": "Community",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "cookiePolicy": "Cookie Policy",
+    "rights": "All rights reserved",
+    "madeWith": "Made with passion for education",
+    "facebook": "Facebook",
+    "twitter": "Twitter",
+    "linkedin": "LinkedIn",
+    "youtube": "YouTube"
+  },
+  "language": {
+    "en": "English",
+    "ar": "العربية"
+  },
+  "contact": {
+    "title": "Get in Touch",
+    "subtitle": "Have questions, feedback, or need support? We're here to help you on your learning journey.",
+    "email": {
+      "title": "Email Us",
+      "value": "support@fislearn.com",
+      "note": "We reply within 24 hours"
+    },
+    "phone": {
+      "title": "Call Us",
+      "value": "+1 (555) 123-4567",
+      "note": "Mon-Fri from 8am to 6pm"
+    },
+    "visit": {
+      "title": "Visit Us",
+      "address": "123 Learning Street",
+      "city": "San Francisco, CA 94102"
+    },
+    "hours": {
+      "title": "Working Hours",
+      "weekdays": "Mon-Fri: 8am-6pm",
+      "weekend": "Weekend: 10am-4pm"
+    },
+    "form": {
+      "title": "Send us a Message",
+      "subtitle": "Fill out the form below and we'll help you get started.",
+      "name": "Full Name",
+      "namePlaceholder": "John Doe",
+      "email": "Email Address",
+      "emailPlaceholder": "john@example.com",
+      "subject": "Subject",
+      "subjectPlaceholder": "What is this regarding?",
+      "message": "Message",
+      "messagePlaceholder": "Tell us how we can help...",
+      "send": "Send Message",
+      "replyNote": "We typically reply in under 24 hours.",
+      "successTitle": "Message Sent!",
+      "successMessage": "Thanks for reaching out, {name}! We've received your message and will get back to you within 24 hours.",
+      "friend": "friend",
+      "sendAnother": "Send Another",
+      "maxChars": "Max 1000 characters",
+      "sending": "Sending Message..."
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "q1": "How do I enroll in a course?",
+      "a1": "Simply create an account, browse our courses, and click \"Enroll\" on any course you're interested in.",
+      "q2": "Can I get a refund?",
+      "a2": "Yes, we offer a 30-day money-back guarantee on all paid courses.",
+      "q3": "Are certificates included?",
+      "a3": "Yes, all courses include a certificate of completion that you can share on LinkedIn.",
+      "q4": "Do you offer team plans?",
+      "a4": "Yes, we have enterprise plans for teams and organizations. Contact us for details."
+    },
+    "help": {
+      "title": "Still need help?",
+      "subtitle": "Our support team is available 24/7 to assist you.",
+      "helpCenter": "Visit Help Center",
+      "officeTitle": "Visit Our Office",
+      "officeAddress": "123 Learning Street, San Francisco, CA 94102"
+    }
+  },
+  "about": {
+    "hero": {
+      "title": "We're building the future of learning",
+      "subtitle": "FIS Learn connects passionate experts with eager learners. We are on a mission to democratize access to high-quality education globally."
+    },
+    "mission": {
+      "title": "Our Mission",
+      "description": "To empower individuals worldwide with the knowledge and skills they need to achieve their personal and professional goals. We believe education is the fundamental right that unlocks human potential."
+    },
+    "vision": {
+      "title": "Our Vision",
+      "description": "To become the world's most trusted online learning platform, creating a future where anyone, anywhere can learn anything from the best instructors."
+    },
+    "values": {
+      "title": "Core Values",
+      "subtitle": "The principles that guide our decisions and shape our culture",
+      "excellence": {
+        "title": "Excellence",
+        "description": "We strive for world-class quality in every course, feature, and interaction."
+      },
+      "passion": {
+        "title": "Passion",
+        "description": "We are driven by a genuine love for education and student success."
+      },
+      "community": {
+        "title": "Community",
+        "description": "We foster a supportive environment where learners connect and grow together."
+      },
+      "inclusivity": {
+        "title": "Inclusivity",
+        "description": "We build for everyone, ensuring education is accessible across borders."
+      },
+      "integrity": {
+        "title": "Integrity",
+        "description": "We operate with transparency, honesty, and an unwavering commitment to ethics."
+      },
+      "innovation": {
+        "title": "Innovation",
+        "description": "We constantly push the boundaries of what online learning can look like."
+      }
+    },
+    "journey": {
+      "title": "Our Journey",
+      "subtitle": "From a small idea to a global community",
+      "2020": {
+        "title": "The Beginning",
+        "description": "FIS Learn starts with a vision to democratize education."
+      },
+      "2021": {
+        "title": "Rapid Growth",
+        "description": "Reached 10,000 students and launched our first 100 courses."
+      },
+      "2022": {
+        "title": "Going Global",
+        "description": "Expanded fast, welcoming learners from over 50 countries."
+      },
+      "2023": {
+        "title": "Innovation Award",
+        "description": "Recognized as the 'Best New EdTech Platform' by TechWeekly."
+      },
+      "2024": {
+        "title": "AI Integration",
+        "description": "Launched personalized AI tutors for every student."
+      }
+    },
+    "team": {
+      "title": "Meet the Team",
+      "subtitle": "The passionate people behind FIS Learn",
+      "sarah": {
+        "name": "Sarah Johnson",
+        "role": "CEO & Founder",
+        "bio": "Former educator with 15+ years of experience in online learning."
+      },
+      "michael": {
+        "name": "Michael Chen",
+        "role": "Chief Technology Officer",
+        "bio": "Tech leader passionate about building scalable learning platforms."
+      },
+      "emily": {
+        "name": "Emily Rodriguez",
+        "role": "Head of Content",
+        "bio": "Curriculum expert focused on creating engaging learning experiences."
+      },
+      "david": {
+        "name": "David Kim",
+        "role": "Head of Operations",
+        "bio": "Operations specialist ensuring smooth platform performance."
+      }
+    },
+    "cta": {
+      "title": "Want to join our mission?",
+      "subtitle": "We are always looking for passionate individuals to join our team. Check out our open positions or become an instructor.",
+      "viewOpenings": "View Openings",
+      "contactUs": "Contact Us"
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "subtitle": "Insights and resources for proactive learners",
+    "featured": "Featured Article",
+    "latest": "Latest Articles",
+    "loadMore": "Load More Articles",
+    "newsletter": {
+      "title": "Subscribe to Our Newsletter",
+      "subtitle": "Get the latest articles and resources delivered straight to your inbox.",
+      "placeholder": "Enter your email",
+      "button": "Subscribe",
+      "success": "Thanks for subscribing!"
+    }
+  }
+}

@@ -1,0 +1,62 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+.next
+.next.bak-*
+out
+build
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+.claude
+.mcp.json
+.windsurf
+
+# Temp files
+.tmp_*
+
+# OS
+.DS_Store
+Thumbs.db
+NUL
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage
+.nyc_output
+
+# Turbo
+.turbo
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Cache
+.cache
+.parcel-cache
+
+# Debug
+.pnpm-debug.log
