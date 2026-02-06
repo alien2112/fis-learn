@@ -9,8 +9,8 @@ A phased approach to assess, design, and validate production readiness for:
 **Target:** Thousands of concurrent users, real-time interaction, enterprise-grade reliability
 
 **Initial Audit:** 2026-02-06
-**Re-Audit Date:** 2026-02-06 (post-fix verification)
-**Overall Status:** NOT PRODUCTION READY - 4 critical blockers remain (down from 9)
+**Re-Audit Date:** 2026-02-06 (third audit — post-cookie/git/CI fix)
+**Overall Status:** NOT PRODUCTION READY - 1 critical blocker remains (down from 9 → 4 → 1)
 
 ---
 
@@ -20,8 +20,9 @@ A phased approach to assess, design, and validate production readiness for:
 |------|-------|----------|
 | 2026-02-06 | Initial audit | 9 CRITICAL blockers |
 | 2026-02-06 | Re-audit after fixes | 4 CRITICAL blockers remain |
+| 2026-02-06 | Third audit — cookie migration, git, CI/CD | 1 CRITICAL blocker remains |
 
-### Fixes Verified This Audit
+### Fixes Verified — Round 1
 - [x] JWT secret hardcoded fallback removed — now throws error if missing
 - [x] `Math.random()` replaced with `crypto.randomBytes()` for access codes
 - [x] HTML sanitization added via `isomorphic-dompurify` for community messages
@@ -35,15 +36,27 @@ A phased approach to assess, design, and validate production readiness for:
 - [x] Non-root Docker user in API Dockerfile
 - [x] Cookie security options configured (httpOnly, secure, SameSite)
 
-### Still Broken
-- [ ] JWT tokens still in localStorage (admin + web apps)
-- [ ] `.env` still contains real Supabase credentials (needs rotation)
-- [ ] No git version control initialized
-- [ ] No CI/CD pipeline
-- [ ] No account lockout / brute force protection
-- [ ] No external error tracking (Sentry/Datadog)
-- [ ] Socket.IO still in-memory only (no Redis adapter)
-- [ ] RedisService + AuditLogService exist but are not wired into any code
+### Fixes Verified — Round 2
+- [x] **JWT tokens moved from localStorage to httpOnly cookies** (all apps)
+  - Backend: `auth.controller.ts` sets httpOnly/Secure/SameSite cookies on login, refresh, MFA verify; clears on logout, password change
+  - JWT strategy: Extracts token from Authorization header OR `accessToken` cookie (dual support)
+  - Admin app: Removed all `localStorage` token usage, `withCredentials: true` on axios
+  - Web app: Removed all `localStorage` token usage, `credentials: 'include'` on all fetch calls
+  - WebSocket gateway: Reads access token from cookie header as fallback
+  - Community API, analytics, dashboard, assessments, settings — all migrated
+- [x] **Git version control initialized** — `main` branch with initial commit (362 files)
+- [x] **GitHub Actions CI/CD pipeline** — `.github/workflows/ci.yml`
+  - Lint & Build job (pnpm install, prisma generate, turbo build)
+  - Test job (Postgres + Redis services, migrations, Jest)
+  - Docker Build job (builds API, admin, web images on main push)
+  - Concurrency control (cancels stale runs)
+
+### Still Open
+- [ ] **CRITICAL:** `.env` still contains real Supabase credentials (needs rotation before any public repo)
+- [ ] No account lockout / brute force protection (HIGH)
+- [ ] No external error tracking — Sentry/Datadog (HIGH)
+- [ ] Socket.IO still in-memory only — no Redis adapter (MEDIUM)
+- [ ] RedisService + AuditLogService exist but are not wired into app module (MEDIUM)
 
 ---
 
