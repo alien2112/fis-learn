@@ -18,12 +18,22 @@ import {
 import { MfaMethod, TokenType } from '@prisma/client';
 import { VerifyMfaSetupDto, DisableMfaDto } from './dto';
 
-// Encryption for MFA secrets - must be set via environment variable
-const ENCRYPTION_KEY = process.env.MFA_ENCRYPTION_KEY;
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 
-if (!ENCRYPTION_KEY) {
-  throw new Error('MFA_ENCRYPTION_KEY environment variable is required. Generate a secure key with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+function getMfaEncryptionKeyFromEnv(): Buffer {
+  const keyHex = process.env.MFA_ENCRYPTION_KEY;
+  if (!keyHex) {
+    throw new Error(
+      'MFA_ENCRYPTION_KEY environment variable is required. Generate a secure key with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+    );
+  }
+
+  // aes-256-gcm expects a 32-byte key; we store it as 64 hex characters.
+  if (!/^[0-9a-f]{64}$/i.test(keyHex)) {
+    throw new Error('MFA_ENCRYPTION_KEY must be 64 hex characters (32 bytes).');
+  }
+
+  return Buffer.from(keyHex, 'hex');
 }
 
 /**
@@ -35,12 +45,16 @@ if (!ENCRYPTION_KEY) {
 @Injectable()
 export class MfaModuleService {
   private readonly logger = new Logger(MfaModuleService.name);
+  private readonly encryptionKey: Buffer;
 
   constructor(
     private readonly prisma: PrismaService,
     @Inject(MFA_SERVICE) private readonly mfaService: IMfaService,
     @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
-  ) {}
+  ) {
+    // Validate and parse once on startup (after ConfigModule loads env).
+    this.encryptionKey = getMfaEncryptionKeyFromEnv();
+  }
 
   /**
    * Get MFA status for a user
@@ -389,8 +403,7 @@ export class MfaModuleService {
 
   private encryptSecret(secret: string): string {
     const iv = crypto.randomBytes(16);
-    const key = Buffer.from(ENCRYPTION_KEY!, 'hex');
-    const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
+    const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, this.encryptionKey, iv);
 
     let encrypted = cipher.update(secret, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -405,9 +418,8 @@ export class MfaModuleService {
 
     const iv = Buffer.from(ivHex, 'hex');
     const authTag = Buffer.from(authTagHex, 'hex');
-    const key = Buffer.from(ENCRYPTION_KEY!, 'hex');
 
-    const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
+    const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, this.encryptionKey, iv);
     decipher.setAuthTag(authTag);
 
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');

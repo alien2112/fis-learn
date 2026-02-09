@@ -12,6 +12,8 @@ import {
   EMAIL_SERVICE,
   EmailService,
   EmailTemplateType,
+  AUDIT_LOG_SERVICE,
+  AuditLogService,
 } from '../../common/external-services';
 import {
   SubscriptionTier,
@@ -39,11 +41,13 @@ import {
 @Injectable()
 export class SubscriptionsService {
   private readonly logger = new Logger(SubscriptionsService.name);
+  private static readonly ALLOWED_PAYMENT_PROVIDERS = ['STRIPE', 'PAYPAL', 'PADDLE'] as const;
 
   constructor(
     private readonly prisma: PrismaService,
     @Inject(PAYMENT_GATEWAY) private readonly paymentGateway: PaymentGateway,
     @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
+    @Inject(AUDIT_LOG_SERVICE) private readonly auditLog: AuditLogService,
   ) {}
 
   // ============ PLAN MANAGEMENT ============
@@ -323,40 +327,71 @@ export class SubscriptionsService {
   async handleWebhookEvent(
     payload: string | Buffer,
     signature: string,
-  ): Promise<void> {
+  ): Promise<{ received: boolean; duplicate?: boolean }> {
+    // Validate payment provider name to prevent env var injection
+    const providerKey = this.paymentGateway.providerName.toUpperCase();
+    if (!SubscriptionsService.ALLOWED_PAYMENT_PROVIDERS.includes(providerKey as any)) {
+      throw new BadRequestException(`Invalid payment provider: ${this.paymentGateway.providerName}`);
+    }
+
+    const webhookSecret = process.env[`${providerKey}_WEBHOOK_SECRET`];
+    if (!webhookSecret) {
+      this.logger.error(`Webhook secret not configured for provider: ${providerKey}`);
+      throw new BadRequestException('Webhook verification failed');
+    }
+
     const event = this.paymentGateway.verifyWebhook({
       payload,
       signature,
-      secret: process.env[`${this.paymentGateway.providerName.toUpperCase()}_WEBHOOK_SECRET`] || '',
+      secret: webhookSecret,
     });
+
+    // Idempotency check
+    const eventId = event.data?.id || '';
+    const provider = this.paymentGateway.providerName;
+
+    if (await this.isWebhookProcessed(provider, eventId)) {
+      this.logger.log(`Webhook event ${eventId} already processed, skipping`);
+      return { received: true, duplicate: true };
+    }
 
     this.logger.log(`Processing webhook event: ${event.type}`);
 
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await this.handleCheckoutCompleted(event.data);
-        break;
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed':
+          await this.handleCheckoutCompleted(event.data);
+          break;
 
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-        await this.handleSubscriptionUpdated(event.data);
-        break;
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated':
+          await this.handleSubscriptionUpdated(event.data);
+          break;
 
-      case 'customer.subscription.deleted':
-        await this.handleSubscriptionDeleted(event.data);
-        break;
+        case 'customer.subscription.deleted':
+          await this.handleSubscriptionDeleted(event.data);
+          break;
 
-      case 'invoice.paid':
-        await this.handleInvoicePaid(event.data);
-        break;
+        case 'invoice.paid':
+          await this.handleInvoicePaid(event.data);
+          break;
 
-      case 'invoice.payment_failed':
-        await this.handlePaymentFailed(event.data);
-        break;
+        case 'invoice.payment_failed':
+          await this.handlePaymentFailed(event.data);
+          break;
 
-      default:
-        this.logger.log(`Unhandled webhook event: ${event.type}`);
+        default:
+          this.logger.log(`Unhandled webhook event: ${event.type}`);
+      }
+
+      // Record successful processing
+      await this.recordWebhookEvent(provider, eventId, event.type, event.data);
+    } catch (error) {
+      this.logger.error(`Failed to process webhook ${eventId}:`, error);
+      throw error;
     }
+
+    return { received: true };
   }
 
   private async handleCheckoutCompleted(data: Record<string, any>): Promise<void> {
@@ -623,10 +658,33 @@ export class SubscriptionsService {
   }
 
   private async updateUserTier(userId: string, tier: SubscriptionTier): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { subscriptionTier: true },
+    });
+
+    if (!user) {
+      this.logger.warn(`User not found when updating tier: ${userId}`);
+      return;
+    }
+
+    if (user.subscriptionTier === tier) {
+      return; // No change needed
+    }
+
     await this.prisma.user.update({
       where: { id: userId },
       data: { subscriptionTier: tier },
     });
+
+    // Audit log the tier change
+    await this.auditLog.logDataChange(
+      'system',
+      'SUBSCRIPTION_TIER_CHANGE',
+      'USER',
+      userId,
+      { old: { subscriptionTier: user.subscriptionTier }, new: { subscriptionTier: tier } },
+    );
   }
 
   private async findPlanByExternalId(externalPriceId: string): Promise<SubscriptionPlan | null> {
@@ -659,5 +717,25 @@ export class SubscriptionsService {
     };
 
     return statusMap[providerStatus.toLowerCase()] || SubscriptionStatus.ACTIVE;
+  }
+
+  private async isWebhookProcessed(provider: string, eventId: string): Promise<boolean> {
+    if (!eventId) return false;
+    const existing = await this.prisma.webhookEvent.findUnique({
+      where: { provider_externalId: { provider, externalId: eventId } },
+    });
+    return !!existing;
+  }
+
+  private async recordWebhookEvent(provider: string, eventId: string, eventType: string, payload: any): Promise<void> {
+    if (!eventId) return;
+    await this.prisma.webhookEvent.create({
+      data: {
+        provider,
+        externalId: eventId,
+        eventType,
+        payload: payload as any,
+      },
+    });
   }
 }

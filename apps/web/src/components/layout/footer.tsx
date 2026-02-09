@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { GraduationCap, Facebook, Twitter, Linkedin, Youtube } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -63,12 +65,12 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center space-x-2">
+            <Link href="/" className="flex items-center gap-2">
               <GraduationCap className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold">FIS Learn</span>
+              <span className="text-xl font-bold">{t('brandName')}</span>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">{t('tagline')}</p>
-            <div className="flex space-x-4 mt-6">
+            <div className="flex gap-4 mt-6">
               {socialLinks.map((social) => {
                 const Icon = socialIcons[social.icon as keyof typeof socialIcons];
                 return (
@@ -109,9 +111,9 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} FIS Learn. {t('rights')}.
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
+            <p className="text-sm text-muted-foreground text-center md:text-start">
+              &copy; {new Date().getFullYear()} {t('brandName')}. {t('rights')}.
             </p>
             <p className="text-sm text-muted-foreground">{t('madeWith')}</p>
           </div>

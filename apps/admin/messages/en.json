@@ -1,0 +1,267 @@
+{
+  "common": {
+    "appName": "FIS Learn",
+    "adminPanel": "Admin Panel",
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "students": "Students",
+    "instructors": "Instructors",
+    "courses": "Courses",
+    "categories": "Categories",
+    "skillTrees": "Skill Trees",
+    "accessCodes": "Access Codes",
+    "subscriptions": "Subscriptions",
+    "enrollments": "Enrollments",
+    "streaming": "Live Streaming",
+    "community": "Community",
+    "notifications": "Notifications",
+    "analytics": "Analytics",
+    "auditLogs": "Audit Logs",
+    "settings": "Settings",
+    "profile": "Profile",
+    "logout": "Log out",
+    "collapse": "Collapse",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "actions": "Actions",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "noData": "No data available",
+    "total": "Total",
+    "viewDetails": "View Details",
+    "accessDenied": "Access Denied",
+    "noPermissionMessage": "You do not have permission to access the admin panel."
+  },
+  "auth": {
+    "adminLogin": "Admin Login",
+    "loginDescription": "Enter your credentials to access the admin panel",
+    "email": "Email",
+    "emailPlaceholder": "admin@fis-learn.com",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "signIn": "Sign In",
+    "signingIn": "Signing in...",
+    "demoCredentials": "Demo credentials:",
+    "invalidCredentials": "Invalid email or password"
+  },
+  "subscriptions": {
+    "title": "Subscription Plans",
+    "subtitle": "Manage subscription tiers and pricing",
+    "createPlan": "Create New Plan",
+    "editPlan": "Edit Plan",
+    "deletePlan": "Delete Plan",
+    "planName": "Plan Name",
+    "description": "Description",
+    "price": "Price",
+    "interval": "Billing Interval",
+    "features": "Features",
+    "maxCourses": "Max Courses",
+    "maxStorage": "Max Storage (GB)",
+    "support": "Support Level",
+    "isActive": "Active",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
+    "intervals": {
+      "MONTHLY": "Monthly",
+      "YEARLY": "Yearly",
+      "LIFETIME": "Lifetime"
+    },
+    "supportLevels": {
+      "BASIC": "Basic",
+      "PRIORITY": "Priority",
+      "PREMIUM": "Premium"
+    },
+    "stats": {
+      "totalPlans": "Total Plans",
+      "activePlans": "Active Plans",
+      "totalSubscribers": "Total Subscribers",
+      "monthlyRevenue": "Monthly Revenue"
+    },
+    "form": {
+      "nameRequired": "Plan name is required",
+      "priceRequired": "Price is required",
+      "priceMin": "Price must be at least 0",
+      "intervalRequired": "Billing interval is required",
+      "descriptionPlaceholder": "Enter plan description",
+      "featuresList": "List of features (one per line)",
+      "maxCoursesPlaceholder": "Unlimited",
+      "maxStoragePlaceholder": "in GB"
+    },
+    "deleteConfirm": {
+      "title": "Delete Plan",
+      "message": "Are you sure you want to delete this plan? Active subscribers will not be affected, but new subscriptions will be blocked.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    }
+  },
+  "enrollments": {
+    "title": "Course Enrollments",
+    "subtitle": "Manage student course enrollments",
+    "student": "Student",
+    "course": "Course",
+    "enrolledAt": "Enrolled Date",
+    "progress": "Progress",
+    "status": "Status",
+    "completedAt": "Completed",
+    "expiresAt": "Expires",
+    "statuses": {
+      "ACTIVE": "Active",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired"
+    },
+    "stats": {
+      "totalEnrollments": "Total Enrollments",
+      "activeEnrollments": "Active",
+      "completedEnrollments": "Completed",
+      "avgProgress": "Avg. Progress"
+    },
+    "filters": {
+      "allCourses": "All Courses",
+      "allStatuses": "All Statuses"
+    },
+    "actions": {
+      "viewProgress": "View Progress",
+      "cancelEnrollment": "Cancel Enrollment",
+      "extendExpiry": "Extend Expiry"
+    }
+  },
+  "users": {
+    "title": "User Management",
+    "subtitle": "Manage users, roles, and permissions",
+    "role": "Role",
+    "changeRole": "Change Role",
+    "changeStatus": "Change Status",
+    "banUser": "Ban User",
+    "suspendUser": "Suspend User",
+    "activateUser": "Activate User",
+    "roles": {
+      "STUDENT": "Student",
+      "INSTRUCTOR": "Instructor",
+      "ADMIN": "Admin",
+      "SUPER_ADMIN": "Super Admin"
+    },
+    "statuses": {
+      "ACTIVE": "Active",
+      "SUSPENDED": "Suspended",
+      "BANNED": "Banned"
+    },
+    "confirmations": {
+      "changeRole": "Change user role to {role}?",
+      "banUser": "Ban this user? They will lose all access.",
+      "suspendUser": "Suspend this user temporarily?",
+      "activateUser": "Activate this user account?"
+    }
+  },
+  "streaming": {
+    "title": "Live Streaming",
+    "subtitle": "Manage live classes and recordings",
+    "createStream": "Create Live Stream",
+    "streamTitle": "Stream Title",
+    "course": "Course",
+    "scheduledStart": "Scheduled Start",
+    "scheduledEnd": "Scheduled End",
+    "isLive": "Live Now",
+    "recordings": "Recordings",
+    "viewers": "Viewers",
+    "duration": "Duration",
+    "statuses": {
+      "SCHEDULED": "Scheduled",
+      "LIVE": "Live",
+      "ENDED": "Ended",
+      "CANCELLED": "Cancelled"
+    },
+    "stats": {
+      "totalStreams": "Total Streams",
+      "liveNow": "Live Now",
+      "scheduled": "Scheduled",
+      "totalViewers": "Total Viewers"
+    }
+  },
+  "community": {
+    "title": "Community Moderation",
+    "subtitle": "Moderate channels and messages",
+    "reportedContent": "Reported Content",
+    "pinnedMessages": "Pinned Messages",
+    "lockedThreads": "Locked Threads",
+    "channel": "Channel",
+    "message": "Message",
+    "author": "Author",
+    "reportedBy": "Reported By",
+    "reportReason": "Reason",
+    "actions": {
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "hide": "Hide",
+      "restore": "Restore",
+      "markAnswer": "Mark as Answer"
+    }
+  },
+  "auditLogs": {
+    "title": "Audit Logs",
+    "subtitle": "System activity and security logs",
+    "action": "Action",
+    "user": "User",
+    "entityType": "Entity Type",
+    "entityId": "Entity ID",
+    "timestamp": "Timestamp",
+    "ipAddress": "IP Address",
+    "metadata": "Metadata",
+    "filters": {
+      "allActions": "All Actions",
+      "allUsers": "All Users",
+      "dateRange": "Date Range"
+    }
+  },
+  "notifications": {
+    "title": "Notification Management",
+    "subtitle": "Send bulk notifications to users",
+    "sendBulk": "Send Bulk Notification",
+    "recipients": "Recipients",
+    "subject": "Subject",
+    "message": "Message",
+    "type": "Type",
+    "types": {
+      "INFO": "Info",
+      "SUCCESS": "Success",
+      "WARNING": "Warning",
+      "ERROR": "Error"
+    },
+    "recipientGroups": {
+      "all": "All Users",
+      "students": "All Students",
+      "instructors": "All Instructors",
+      "admins": "All Admins",
+      "custom": "Custom Selection"
+    },
+    "preview": "Preview",
+    "send": "Send Notification",
+    "scheduled": "Schedule for Later"
+  },
+  "analytics": {
+    "title": "Analytics & Reports",
+    "subtitle": "Platform insights and metrics",
+    "coursePerformance": "Course Performance",
+    "userEngagement": "User Engagement",
+    "revenue": "Revenue",
+    "topCourses": "Top Courses",
+    "topInstructors": "Top Instructors",
+    "activeUsers": "Active Users",
+    "completionRate": "Completion Rate",
+    "avgSessionDuration": "Avg. Session Duration"
+  }
+}

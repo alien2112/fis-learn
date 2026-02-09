@@ -2,16 +2,19 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/contexts/auth-context';
 import { Sidebar } from './sidebar';
 import { Header } from './header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Toaster } from '@/components/ui/toaster';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
+  const t = useTranslations('common');
   const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -44,9 +47,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   if (!hasAdminAccess) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold text-destructive">Access Denied</h1>
+        <h1 className="text-2xl font-bold text-destructive">{t('accessDenied')}</h1>
         <p className="mt-2 text-muted-foreground">
-          You do not have permission to access the admin panel.
+          {t('noPermissionMessage')}
         </p>
       </div>
     );
@@ -59,6 +62,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <Header />
         <main className="p-6">{children}</main>
       </div>
+      <Toaster />
     </div>
   );
 }

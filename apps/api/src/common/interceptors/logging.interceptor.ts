@@ -9,6 +9,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { randomUUID } from 'crypto';
 import { Request } from 'express';
+import { redactUrl } from '../utils/pii-redactor';
 
 interface RequestWithId extends Request {
   id?: string;
@@ -45,9 +46,30 @@ export class LoggingInterceptor implements NestInterceptor {
     // Add timing headers for debugging
     response.setHeader('X-Request-Start', request.startTime.toString());
 
-    const { method, url } = request;
+    const { method } = request;
+    const url = redactUrl(request.url);
     const userAgent = request.get('user-agent') || 'unknown';
     const userId = (request as any).user?.id || 'anonymous';
+
+    // Skip logging for liveness/readiness probes
+    const skipPaths = ['/api/v1/health/live', '/api/v1/health/ready'];
+    if (skipPaths.some((p) => request.url.startsWith(p))) {
+      return next.handle();
+    }
+
+    // Sample logging for high-traffic paths (log 1% of health checks)
+    const samplePaths: Record<string, number> = {
+      '/api/v1/health': 0.01,
+    };
+    const sampleRate = Object.entries(samplePaths).find(([p]) => request.url.startsWith(p))?.[1];
+    if (sampleRate && Math.random() > sampleRate) {
+      return next.handle().pipe(
+        tap(() => {
+          const duration = Date.now() - (request.startTime || 0);
+          response.setHeader('X-Response-Time', `${duration}ms`);
+        }),
+      );
+    }
 
     // Log request start
     this.logger.log({

@@ -27,12 +27,20 @@ import {
 } from './dto';
 import { Roles, CurrentUser } from '@/common/decorators';
 import { AuthUser } from '@/modules/auth/types/jwt-payload.interface';
+import { ChangePasswordDto } from '@/modules/auth/dto/reset-password.dto';
+import { UserDataExportService } from './user-data-export.service';
+import { UserDataDeletionService } from './user-data-deletion.service';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Users')
 @ApiBearerAuth()
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private userDataExportService: UserDataExportService,
+    private userDataDeletionService: UserDataDeletionService,
+  ) {}
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
@@ -54,7 +62,7 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Invalid current password' })
   async changePassword(
     @CurrentUser() user: AuthUser,
-    @Body() dto: { currentPassword: string; newPassword: string },
+    @Body() dto: ChangePasswordDto,
   ) {
     return this.usersService.changePassword(user.id, dto);
   }
@@ -134,8 +142,9 @@ export class UsersController {
   async updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateUserStatusDto,
+    @CurrentUser() admin: AuthUser,
   ) {
-    return this.usersService.updateStatus(id, dto);
+    return this.usersService.updateStatus(id, dto, admin.id);
   }
 
   @Put(':id/role')
@@ -149,7 +158,7 @@ export class UsersController {
     @Body() dto: UpdateRoleDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.usersService.updateRole(id, dto, user.role);
+    return this.usersService.updateRole(id, dto, user.role, user.id);
   }
 
   @Delete(':id')
@@ -160,6 +169,25 @@ export class UsersController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async delete(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.usersService.delete(id, user.role);
+    return this.usersService.delete(id, user.role, user.id);
+  }
+
+  @Get('me/data-export')
+  @ApiOperation({ summary: 'Export all personal data (GDPR Article 20)' })
+  @Throttle({ default: { limit: 1, ttl: 86400000 } }) // Once per day
+  async exportMyData(@CurrentUser() user: AuthUser) {
+    return this.userDataExportService.exportUserData(user.id);
+  }
+
+  @Delete('me')
+  @ApiOperation({ summary: 'Request account deletion (GDPR Article 17)' })
+  async requestDeletion(@CurrentUser() user: AuthUser) {
+    return this.userDataDeletionService.requestDeletion(user.id);
+  }
+
+  @Post('me/cancel-deletion')
+  @ApiOperation({ summary: 'Cancel pending account deletion' })
+  async cancelDeletion(@CurrentUser() user: AuthUser) {
+    return this.userDataDeletionService.cancelDeletion(user.id);
   }
 }

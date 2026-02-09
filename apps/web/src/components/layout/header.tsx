@@ -37,21 +37,21 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2">
+        <Link href="/" className="flex items-center gap-2">
           <div className="relative h-10 w-10">
             <Image
               src="/logo.png"
-              alt="FIS Learn Logo"
+              alt={t('brandName')}
               fill
               className="object-contain"
               priority
             />
           </div>
-          <span className="text-xl font-bold">FIS Learn</span>
+          <span className="text-xl font-bold">{t('brandName')}</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-6">
+        <nav className="hidden md:flex items-center gap-6">
           {publicNavLinks.map((link) => (
             <Link
               key={link.href}
@@ -69,7 +69,7 @@ export function Header() {
         </nav>
 
         {/* CTA Buttons */}
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="hidden md:flex items-center gap-4">
           <LanguageSwitcher />
           {isLoading ? null : user ? (
             <>
@@ -167,24 +167,24 @@ export function Header() {
                   <div className="px-2 py-2 text-sm font-medium text-muted-foreground border-b">
                     {user.name || user.email}
                   </div>
-                  <Link 
-                    href="/dashboard" 
+                  <Link
+                    href="/dashboard"
                     className="flex items-center gap-2 px-2 py-2 text-sm font-medium hover:bg-accent rounded-md"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <LayoutDashboard className="h-4 w-4" />
                     {t('dashboard')}
                   </Link>
-                  <Link 
-                    href="/my-courses" 
+                  <Link
+                    href="/my-courses"
                     className="flex items-center gap-2 px-2 py-2 text-sm font-medium hover:bg-accent rounded-md"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <BookOpen className="h-4 w-4" />
                     My Courses
                   </Link>
-                  <Link 
-                    href="/assessments" 
+                  <Link
+                    href="/assessments"
                     className="flex items-center gap-2 px-2 py-2 text-sm font-medium hover:bg-accent rounded-md"
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -192,15 +192,15 @@ export function Header() {
                     Assessments
                   </Link>
                   <div className="border-t my-2"></div>
-                  <Link 
-                    href="/settings" 
+                  <Link
+                    href="/settings"
                     className="flex items-center gap-2 px-2 py-2 text-sm font-medium hover:bg-accent rounded-md"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <Settings className="h-4 w-4" />
                     Settings
                   </Link>
-                  <button 
+                  <button
                     onClick={() => { logout(); setMobileMenuOpen(false); }}
                     className="flex items-center gap-2 px-2 py-2 text-sm font-medium text-red-600 hover:bg-accent rounded-md w-full"
                   >

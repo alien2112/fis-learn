@@ -5,6 +5,7 @@
   },
   "navigation": {
     "home": "Home",
+    "brandName": "FIS Academy",
     "courses": "Courses",
     "about": "About",
     "blog": "Blog",
@@ -37,7 +38,8 @@
     "students": "Students",
     "courses": "Courses",
     "instructors": "Instructors",
-    "satisfaction": "Satisfaction Rate"
+    "satisfaction": "Satisfaction Rate",
+    "trustedBy": "Trusted by leading companies"
   },
   "features": {
     "title": "Why Choose Us",
@@ -72,7 +74,15 @@
     "filters": "Filters",
     "all": "All",
     "noResults": "No courses found in this category.",
-    "error": "Failed to load courses. Please try again later."
+    "error": "Failed to load courses. Please try again later.",
+    "levels": {
+      "BEGINNER": "Beginner",
+      "INTERMEDIATE": "Intermediate",
+      "ADVANCED": "Advanced",
+      "Beginner": "Beginner",
+      "Intermediate": "Intermediate",
+      "Advanced": "Advanced"
+    }
   },
   "cta": {
     "title": "Ready to start your learning journey?",
@@ -135,10 +145,17 @@
         "author": "David Chen",
         "role": "Full Stack Engineer at Stripe"
       }
+    },
+    "categories": {
+      "title": "Top Categories",
+      "subtitle": "Explore a wide range of courses and pick what fits you best.",
+      "allCategories": "All categories",
+      "coursesCount": "{count}+ courses"
     }
   },
   "footer": {
     "tagline": "Empowering learners worldwide with quality online education.",
+    "brandName": "FIS Learn",
     "blog": "Blog",
     "platform": "Platform",
     "browseCourses": "Browse Courses",
@@ -234,7 +251,7 @@
   "about": {
     "hero": {
       "title": "We're building the future of learning",
-      "subtitle": "FIS Learn connects passionate experts with eager learners. We are on a mission to democratize access to high-quality education globally."
+      "subtitle": "FIS Academy connects passionate experts with eager learners. We are on a mission to democratize access to high-quality education globally."
     },
     "mission": {
       "title": "Our Mission",
@@ -339,6 +356,145 @@
       "placeholder": "Enter your email",
       "button": "Subscribe",
       "success": "Thanks for subscribing!"
+    }
+  },
+  "course_details": {
+    "na": "N/A",
+    "description_placeholder": "Build durable skills with structured lessons and active community support.",
+    "sections_count": "{count} sections",
+    "lessons_count": "{count} lessons",
+    "enrolled_count": "{count} enrolled",
+    "free": "Free",
+    "paid": "Paid",
+    "instructors": "Instructors",
+    "instructors_label": "INSTRUCTORS",
+    "lead_instructor": "Lead instructor",
+    "instructor": "Instructor",
+    "access_title": "Course access",
+    "access_enrolled": "You are enrolled. Start learning!",
+    "access_free_desc": "This course is free to join.",
+    "access_paid_desc": "A subscription is required to access this course.",
+    "enrolling": "Enrolling…",
+    "enroll_free": "Enroll for free",
+    "subscribe_access": "Subscribe to access",
+    "sign_in": "Sign in",
+    "progress": "Progress",
+    "completed_fraction": "{completed}/{total} completed",
+    "enter_community": "Enter community",
+    "view_community": "View community",
+    "view_syllabus": "View syllabus",
+    "syllabus_title": "Course outline",
+    "syllabus_desc": "Structured sections with clear progress checkpoints.",
+    "no_sections_title": "No sections yet",
+    "no_sections_desc": "The instructor is preparing the syllabus.",
+    "community_focus_title": "Community focus",
+    "community_focus_desc": "Stay organized, safe, and learning-first.",
+    "community_point_1": "Instructor announcements keep everyone aligned.",
+    "community_point_2": "Q&A threads help you get answers quickly.",
+    "community_point_3": "Discussion channels encourage peer learning.",
+    "go_to_community": "Go to community",
+    "preview": "Preview",
+    "live_now": "Live Now",
+    "upcoming_sessions": "Upcoming Live Sessions",
+    "join_live": "Join Live",
+    "scheduled_for": "Scheduled for {date}",
+    "viewers_count": "{count} viewers",
+    "past_recordings": "Past Recordings",
+    "watch_recording": "Watch"
+  },
+  "community": {
+    "title": "Course Community",
+    "channels": "Channels",
+    "no_channels": "No channels available.",
+    "guidelines_title": "Guidelines",
+    "guideline_1": "Stay on topic and be respectful.",
+    "guideline_2": "Search before asking to reduce duplicates.",
+    "guideline_3": "Instructors may pin or highlight key answers.",
+    "pinned": "Pinned",
+    "load_older": "Load older messages",
+    "ask_question_title": "Ask a question",
+    "start_discussion_title": "Start a discussion",
+    "ask_question_desc": "Be specific so others can help quickly.",
+    "start_discussion_desc": "Share progress, insights, or helpful resources.",
+    "post_announcement_placeholder": "Post an announcement...",
+    "ask_question_placeholder": "Ask your question...",
+    "share_placeholder": "Share something with the community...",
+    "locked_channel_helper": "This channel is locked.",
+    "composer_helper": "Be kind, concise, and clear.",
+    "thread_view_title": "Thread view",
+    "thread_view_desc": "Select a message to view replies and keep discussions organized.",
+    "sign_in_title": "Sign in required",
+    "sign_in_desc": "You need an account to access this community.",
+    "login_button": "Log In",
+    "unavailable_title": "Community unavailable",
+    "channel_descriptions": {
+      "announcements": "Instructor updates, milestones, and course-wide notes.",
+      "qa": "Ask questions and get answers from instructors and peers.",
+      "discussion": "Open discussion and peer learning space."
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated: February 7, 2026",
+    "sections": {
+      "introduction": {
+        "title": "Introduction",
+        "content": "FIS-Learn (\"we\", \"our\", \"us\") is committed to protecting your personal data. This privacy policy explains how we collect, use, and safeguard your information when you use our e-learning platform."
+      },
+      "dataCollection": {
+        "title": "Data We Collect",
+        "content": "We collect information you provide directly: name, email address, profile information, and payment details. We also automatically collect usage data such as course progress, video playback events, and device information to improve your learning experience."
+      },
+      "dataUse": {
+        "title": "How We Use Your Data",
+        "content": "We use your data to provide and improve our services, personalize your learning experience, process payments, send course-related notifications, and communicate important updates. We never sell your personal data to third parties."
+      },
+      "cookies": {
+        "title": "Cookies",
+        "content": "We use essential cookies for authentication and platform functionality. With your consent, we may also use analytics cookies to understand usage patterns and third-party cookies for video playback. You can manage your cookie preferences at any time through the cookie settings banner."
+      },
+      "rights": {
+        "title": "Your Rights (GDPR)",
+        "content": "You have the right to access, export, and delete your personal data. You can export all your data from Settings > Data Export, and request account deletion from Settings > Delete Account. Deletion requests include a 30-day grace period during which you can cancel. After 30 days, all personal data is permanently removed."
+      },
+      "contact": {
+        "title": "Contact Us",
+        "content": "For privacy-related questions or to exercise your data rights, contact us at privacy@fislearn.com or through the contact page on our website."
+      }
+    }
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated: February 7, 2026",
+    "sections": {
+      "acceptance": {
+        "title": "Acceptance of Terms",
+        "content": "By accessing or using FIS-Learn, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our platform."
+      },
+      "accounts": {
+        "title": "User Accounts",
+        "content": "You must provide accurate information when creating an account. You are responsible for maintaining the security of your account credentials. You must be at least 16 years old to create an account. Sharing account access is prohibited."
+      },
+      "content": {
+        "title": "Content & Intellectual Property",
+        "content": "All course content, including videos, text, code, and assessments, is the intellectual property of FIS-Learn or its instructors. You may access content for personal learning purposes only. Redistributing, copying, or reselling course content is strictly prohibited."
+      },
+      "subscriptions": {
+        "title": "Subscriptions & Payments",
+        "content": "Paid subscriptions are billed according to the plan you select. You may cancel at any time, and your access continues until the end of the current billing period. Refunds are handled on a case-by-case basis within 14 days of purchase."
+      },
+      "termination": {
+        "title": "Account Termination",
+        "content": "We reserve the right to suspend or terminate accounts that violate these terms, engage in abusive behavior, or misuse the platform. You may delete your account at any time through the Settings page."
+      },
+      "liability": {
+        "title": "Limitation of Liability",
+        "content": "FIS-Learn provides educational content on an \"as-is\" basis. We do not guarantee specific learning outcomes or employment results. Our total liability is limited to the amount you paid for services in the 12 months preceding any claim."
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "For questions about these terms, contact us at legal@fislearn.com or through the contact page on our website."
+      }
     }
   }
 }

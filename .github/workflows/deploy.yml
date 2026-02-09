@@ -1,0 +1,76 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deploy environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      rollback_sha:
+        description: 'SHA to rollback to (leave empty for latest)'
+        required: false
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.rollback_sha || github.sha }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set deploy SHA
+        id: sha
+        run: echo "sha=${{ inputs.rollback_sha || github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Pull images
+        run: |
+          SHA=$(echo "${{ steps.sha.outputs.sha }}" | cut -c1-7)
+          docker pull ghcr.io/${{ github.repository }}/api:sha-${SHA} || true
+          docker pull ghcr.io/${{ github.repository }}/web:sha-${SHA} || true
+          docker pull ghcr.io/${{ github.repository }}/admin:sha-${SHA} || true
+
+      - name: Pre-deploy database backup
+        if: inputs.environment == 'production'
+        run: echo "::notice::Production deploy - ensure database backup is current before proceeding"
+
+      - name: Deploy
+        run: |
+          echo "Deploying SHA: ${{ steps.sha.outputs.sha }} to ${{ inputs.environment }}"
+          echo "::notice::Deploy step - configure with your hosting platform (docker-compose, ECS, K8s, etc.)"
+
+      - name: Health check
+        run: |
+          echo "Waiting for services to be healthy..."
+          HEALTH_URL="${{ vars.API_URL || 'http://localhost:3011' }}/api/v1/health/ready"
+          for i in $(seq 1 30); do
+            if curl -sf "$HEALTH_URL" > /dev/null 2>&1; then
+              echo "Health check passed on attempt $i"
+              exit 0
+            fi
+            echo "Attempt $i/30 - waiting 5s..."
+            sleep 5
+          done
+          echo "::error::Health check failed after 30 attempts"
+          exit 1
+
+      - name: Rollback on failure
+        if: failure() && !inputs.rollback_sha
+        run: |
+          echo "::error::Deploy failed. To rollback, re-run this workflow with the previous SHA."
+          echo "::notice::Previous successful deploy SHA should be recorded in deployment history."

@@ -1,7 +1,6 @@
-import { Metric, onCLS, onFID, onFCP, onLCP, onTTFB } from 'web-vitals';
+import { type Metric, onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals';
 
 function sendToAnalytics(metric: Metric) {
-  // Send to your analytics endpoint
   const body = JSON.stringify({
     name: metric.name,
     value: metric.value,
@@ -10,7 +9,6 @@ function sendToAnalytics(metric: Metric) {
     navigationType: metric.navigationType,
   });
 
-  // Use sendBeacon for reliability
   if (navigator.sendBeacon) {
     navigator.sendBeacon('/api/analytics/vitals', body);
   } else {
@@ -24,7 +22,7 @@ function sendToAnalytics(metric: Metric) {
 
 export function reportWebVitals() {
   onCLS(sendToAnalytics);
-  onFID(sendToAnalytics);
+  onINP(sendToAnalytics);
   onFCP(sendToAnalytics);
   onLCP(sendToAnalytics);
   onTTFB(sendToAnalytics);

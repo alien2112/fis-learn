@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api/v1';
 
 // Create axios instance with credentials (cookies sent automatically)
 const apiClient: AxiosInstance = axios.create({
@@ -9,6 +9,17 @@ const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true,
+});
+
+// CSRF: Read csrf-token cookie and attach as header on mutating requests
+apiClient.interceptors.request.use((config) => {
+  if (typeof document !== 'undefined' && config.method && !['get', 'head', 'options'].includes(config.method)) {
+    const match = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/);
+    if (match) {
+      config.headers['X-CSRF-Token'] = decodeURIComponent(match[1]);
+    }
+  }
+  return config;
 });
 
 // Response interceptor - handle token refresh via cookie

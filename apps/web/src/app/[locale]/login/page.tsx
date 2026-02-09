@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BilingualHeading, BilingualInline } from '@/components/ui/bilingual-text';
 import { useAuth } from '@/contexts/auth-context';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api/v1';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function LoginPage() {
     setSuccess(null);
 
     if (!email || !password) {
-      setError('Email and password are required.');
+      setError('لازم تكتب الإيميل والباسورد. (Email and password are required.)');
       return;
     }
 
@@ -56,11 +57,11 @@ export default function LoginPage() {
       }
 
       // Tokens are now set as httpOnly cookies by the server
-      setSuccess('Logged in successfully. Redirecting...');
+      setSuccess('تمام! دخلت بنجاح. بنحوّلك دلوقتي... (Logged in successfully. Redirecting...)');
       await refreshUser();
       router.push('/dashboard');
     } catch (err) {
-      setError('Unable to reach the server. Please try again.');
+      setError('مش قادرين نوصل للسيرفر. جرّب تاني. (Unable to reach the server. Please try again.)');
     } finally {
       setIsSubmitting(false);
     }
@@ -72,7 +73,7 @@ export default function LoginPage() {
     setSuccess(null);
 
     if (!mfaPendingToken || !mfaCode) {
-      setError('MFA code is required.');
+      setError('لازم تكتب كود التحقق. (MFA code is required.)');
       return;
     }
 
@@ -93,11 +94,11 @@ export default function LoginPage() {
       }
 
       // Tokens are now set as httpOnly cookies by the server
-      setSuccess('Logged in successfully. Redirecting...');
+      setSuccess('تمام! دخلت بنجاح. بنحوّلك دلوقتي... (Logged in successfully. Redirecting...)');
       await refreshUser();
       router.push('/dashboard');
     } catch (err) {
-      setError('Unable to reach the server. Please try again.');
+      setError('مش قادرين نوصل للسيرفر. جرّب تاني. (Unable to reach the server. Please try again.)');
     } finally {
       setIsSubmitting(false);
     }
@@ -107,20 +108,34 @@ export default function LoginPage() {
     <div className="container flex min-h-[calc(100vh-4rem)] items-center justify-center py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Welcome back</CardTitle>
-          <CardDescription>Log in to continue your learning journey.</CardDescription>
+          <CardTitle>
+            <BilingualHeading ar="أهلا بيك تاني" en="Welcome back" />
+          </CardTitle>
+          <CardDescription>
+            <BilingualHeading
+              ar="سجّل دخولك عشان تكمّل رحلة التعلّم بتاعتك."
+              en="Log in to continue your learning journey."
+            />
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {mfaPendingToken ? (
             <form className="space-y-4" onSubmit={handleMfaSubmit}>
               <div className="space-y-1">
-                <p className="text-sm font-medium">Two-factor authentication</p>
+                <p className="text-sm font-medium">
+                  <BilingualInline ar="تأكيد بخطوتين" en="Two-factor authentication" />
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  Enter the code from your authenticator app.
+                  <BilingualHeading
+                    ar="اكتب الكود من تطبيق الـ Authenticator."
+                    en="Enter the code from your authenticator app."
+                  />
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="mfaCode">Verification code</Label>
+                <Label htmlFor="mfaCode">
+                  <BilingualInline ar="كود التحقق" en="Verification code" />
+                </Label>
                 <Input
                   id="mfaCode"
                   type="text"
@@ -128,7 +143,7 @@ export default function LoginPage() {
                   autoComplete="one-time-code"
                   value={mfaCode}
                   onChange={(event) => setMfaCode(event.target.value)}
-                  placeholder="6-digit code"
+                  placeholder="6-digit code / كود 6 أرقام"
                   maxLength={6}
                 />
               </div>
@@ -137,7 +152,7 @@ export default function LoginPage() {
               {success ? <p className="text-sm text-green-600">{success}</p> : null}
 
               <Button type="submit" className="w-full" disabled={isSubmitting || mfaCode.length < 6}>
-                {isSubmitting ? 'Verifying…' : 'Verify'}
+                {isSubmitting ? 'Verifying... / جاري التحقق...' : 'Verify / تأكيد'}
               </Button>
 
               <button
@@ -145,13 +160,15 @@ export default function LoginPage() {
                 onClick={() => { setMfaPendingToken(null); setMfaCode(''); setError(null); }}
                 className="text-sm text-primary hover:underline w-full"
               >
-                Back to login
+                Back to login / رجوع لتسجيل الدخول
               </button>
             </form>
           ) : (
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">
+                  <BilingualInline ar="الإيميل" en="Email" />
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -162,20 +179,22 @@ export default function LoginPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">
+                  <BilingualInline ar="الباسورد" en="Password" />
+                </Label>
                 <Input
                   id="password"
                   type="password"
                   autoComplete="current-password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Your password"
+                  placeholder="Your password / الباسورد بتاعك"
                 />
               </div>
 
               <div className="flex justify-end">
                 <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-                  Forgot your password?
+                  Forgot your password? / نسيت الباسورد؟
                 </Link>
               </div>
 
@@ -183,17 +202,25 @@ export default function LoginPage() {
               {success ? <p className="text-sm text-green-600">{success}</p> : null}
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Signing in...' : 'Log In'}
+                {isSubmitting ? 'Signing in... / جاري تسجيل الدخول...' : 'Log In / سجّل دخول'}
               </Button>
             </form>
           )}
 
-          <p className="mt-6 text-sm text-muted-foreground">
-            New to FIS Learn?{' '}
-            <Link href="/register" className="text-primary hover:underline">
-              Create an account
-            </Link>
-          </p>
+          <div className="mt-6 text-sm text-muted-foreground flex flex-col gap-1">
+            <p>
+              New to FIS Learn?{' '}
+              <Link href="/register" className="text-primary hover:underline">
+                Create an account
+              </Link>
+            </p>
+            <p lang="ar" dir="rtl">
+              لسه جديد في FIS Learn؟{' '}
+              <Link href="/register" className="text-primary hover:underline">
+                اعمل حساب
+              </Link>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -99,16 +99,16 @@ export class CoursesController {
   @CacheTTL(300) // 5 minutes for single course (rarely changes)
   @ApiOperation({ summary: 'Get course by slug' })
   @ApiResponse({ status: 200, description: 'Course details' })
-  async findBySlug(@Param('slug') slug: string) {
-    return this.coursesService.findBySlug(slug);
+  async findBySlug(@Param('slug') slug: string, @CurrentUser() user?: AuthUser) {
+    return this.coursesService.findBySlug(slug, user?.id, user?.role);
   }
 
   @Get(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get course by ID' })
   @ApiResponse({ status: 200, description: 'Course details' })
-  async findOne(@Param('id') id: string) {
-    return this.coursesService.findOne(id);
+  async findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.coursesService.findOne(id, user.id, user.role);
   }
 
   @Post()
@@ -139,8 +139,8 @@ export class CoursesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a course - Admin only' })
   @ApiResponse({ status: 200, description: 'Course deleted' })
-  async delete(@Param('id') id: string) {
-    return this.coursesService.delete(id);
+  async delete(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.coursesService.delete(id, user.id);
   }
 
   // ============ APPROVAL WORKFLOW ============
@@ -159,8 +159,8 @@ export class CoursesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Approve a course' })
   @ApiResponse({ status: 200, description: 'Course approved' })
-  async approve(@Param('id') id: string) {
-    return this.coursesService.approve(id);
+  async approve(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.coursesService.approve(id, user.id);
   }
 
   @Put(':id/reject')
@@ -168,8 +168,26 @@ export class CoursesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Reject a course with feedback' })
   @ApiResponse({ status: 200, description: 'Course rejected' })
-  async reject(@Param('id') id: string, @Body() dto: RejectCourseDto) {
-    return this.coursesService.reject(id, dto);
+  async reject(@Param('id') id: string, @Body() dto: RejectCourseDto, @CurrentUser() user: AuthUser) {
+    return this.coursesService.reject(id, dto, user.id);
+  }
+
+  @Put(':id/archive')
+  @Roles(Role.INSTRUCTOR, Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Archive a course (hides from catalog, preserves enrollments)' })
+  @ApiResponse({ status: 200, description: 'Course archived' })
+  async archive(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.coursesService.archive(id, user.id, user.role);
+  }
+
+  @Put(':id/unpublish')
+  @Roles(Role.INSTRUCTOR, Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Unpublish a course (moves back to draft)' })
+  @ApiResponse({ status: 200, description: 'Course unpublished' })
+  async unpublish(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.coursesService.unpublish(id, user.id, user.role);
   }
 
   // ============ SECTIONS ============
@@ -182,8 +200,9 @@ export class CoursesController {
   async createSection(
     @Param('id') id: string,
     @Body() dto: CreateSectionDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.coursesService.createSection(id, dto);
+    return this.coursesService.createSection(id, dto, user.id, user.role);
   }
 
   @Put('sections/:sectionId')
@@ -194,8 +213,9 @@ export class CoursesController {
   async updateSection(
     @Param('sectionId') sectionId: string,
     @Body() dto: UpdateSectionDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.coursesService.updateSection(sectionId, dto);
+    return this.coursesService.updateSection(sectionId, dto, user.id, user.role);
   }
 
   @Delete('sections/:sectionId')
@@ -204,8 +224,8 @@ export class CoursesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a section' })
   @ApiResponse({ status: 200, description: 'Section deleted' })
-  async deleteSection(@Param('sectionId') sectionId: string) {
-    return this.coursesService.deleteSection(sectionId);
+  async deleteSection(@Param('sectionId') sectionId: string, @CurrentUser() user: AuthUser) {
+    return this.coursesService.deleteSection(sectionId, user.id, user.role);
   }
 
   // ============ LESSONS ============
@@ -218,8 +238,9 @@ export class CoursesController {
   async createLesson(
     @Param('sectionId') sectionId: string,
     @Body() dto: CreateLessonDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.coursesService.createLesson(sectionId, dto);
+    return this.coursesService.createLesson(sectionId, dto, user.id, user.role);
   }
 
   @Put('lessons/:lessonId')
@@ -230,8 +251,9 @@ export class CoursesController {
   async updateLesson(
     @Param('lessonId') lessonId: string,
     @Body() dto: UpdateLessonDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.coursesService.updateLesson(lessonId, dto);
+    return this.coursesService.updateLesson(lessonId, dto, user.id, user.role);
   }
 
   @Delete('lessons/:lessonId')
@@ -240,8 +262,8 @@ export class CoursesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a lesson' })
   @ApiResponse({ status: 200, description: 'Lesson deleted' })
-  async deleteLesson(@Param('lessonId') lessonId: string) {
-    return this.coursesService.deleteLesson(lessonId);
+  async deleteLesson(@Param('lessonId') lessonId: string, @CurrentUser() user: AuthUser) {
+    return this.coursesService.deleteLesson(lessonId, user.id, user.role);
   }
 
   // ============ INSTRUCTORS ============
@@ -270,6 +292,15 @@ export class CoursesController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.coursesService.enrollStudent(id, user.id);
+  }
+
+  @Get('enrollments/all')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all enrollments (admin only)' })
+  @ApiResponse({ status: 200, description: 'List of all enrollments' })
+  async getAllEnrollments(@Query() query: CourseQueryDto) {
+    return this.coursesService.getAllEnrollments(query);
   }
 
   @Get('enrollments/my')

@@ -13,4 +13,8 @@ export class CreateMessageDto {
   @IsOptional()
   @IsString()
   clientId?: string;
+
+  @IsOptional()
+  @IsString()
+  lessonId?: string; // Optional lesson-level discussion
 }

@@ -1,7 +1,7 @@
-import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import { createHash, createHmac } from 'crypto';
+import { createHash, createHmac, randomInt } from 'crypto';
 
 export interface ZegoTokenPayload {
   app_id: number;
@@ -31,7 +31,7 @@ export class StreamingService {
       throw new Error('ZegoCloud credentials not configured');
     }
 
-    const nonce = Math.floor(Math.random() * 2147483647);
+    const nonce = randomInt(2147483647);
     const ctime = Math.floor(Date.now() / 1000);
     const expire = ctime + 3600; // 1 hour
 
@@ -226,6 +226,29 @@ export class StreamingService {
 
   // Join stream (viewer)
   async joinStream(streamId: string, userId: string) {
+    // Verify stream exists and get courseId
+    const stream = await this.prisma.courseStream.findUnique({
+      where: { id: streamId },
+      select: { courseId: true, instructorId: true },
+    });
+
+    if (!stream) {
+      throw new NotFoundException('Stream not found');
+    }
+
+    // Instructors can always join their own streams
+    if (stream.instructorId !== userId) {
+      // Verify the user is enrolled in the course
+      const enrollment = await this.prisma.enrollment.findUnique({
+        where: { userId_courseId: { userId, courseId: stream.courseId } },
+        select: { status: true },
+      });
+
+      if (!enrollment || enrollment.status !== 'ACTIVE') {
+        throw new ForbiddenException('You must be enrolled in this course to join the stream');
+      }
+    }
+
     // Check if already joined
     const existingViewer = await this.prisma.streamViewer.findFirst({
       where: { streamId, userId },
@@ -240,20 +263,108 @@ export class StreamingService {
     }
 
     // Create new viewer record
-    return this.prisma.streamViewer.create({
+    const viewer = await this.prisma.streamViewer.create({
       data: {
         streamId,
         userId,
       },
     });
+
+    // Track attendance analytics
+    await this.trackAttendance(streamId, userId, 'JOIN');
+
+    return viewer;
   }
 
   // Leave stream (viewer)
   async leaveStream(streamId: string, userId: string) {
-    return this.prisma.streamViewer.updateMany({
+    const result = await this.prisma.streamViewer.updateMany({
       where: { streamId, userId, leftAt: null },
       data: { leftAt: new Date() },
     });
+
+    // Track attendance analytics
+    await this.trackAttendance(streamId, userId, 'LEAVE');
+
+    return result;
+  }
+
+  // Track attendance for analytics
+  private async trackAttendance(streamId: string, userId: string, action: 'JOIN' | 'LEAVE') {
+    try {
+      const stream = await this.prisma.courseStream.findUnique({
+        where: { id: streamId },
+        select: { courseId: true },
+      });
+
+      if (stream?.courseId) {
+        await this.prisma.studentActivityEvent.create({
+          data: {
+            studentId: userId,
+            courseId: stream.courseId,
+            eventType: action === 'JOIN' ? 'LIVE_CLASS_ATTENDED' : 'LIVE_CLASS_LEFT',
+            eventTimestamp: new Date(),
+            sessionId: `${streamId}:${userId}`,
+            eventData: { streamId, action },
+          },
+        });
+      }
+    } catch (error) {
+      // Silently fail analytics - don't disrupt the streaming experience
+      console.debug('Failed to track attendance:', error);
+    }
+  }
+
+  // Get all streams for admin dashboard
+  async getAllStreamsAdmin(query?: { status?: string; page?: number; limit?: number }) {
+    const page = query?.page || 1;
+    const limit = query?.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const where = query?.status ? { status: query.status as any } : {};
+
+    const [streams, total] = await Promise.all([
+      this.prisma.courseStream.findMany({
+        where: where as any,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          course: { select: { id: true, title: true, slug: true } },
+          instructor: {
+            select: { id: true, name: true, avatarUrl: true },
+          },
+          _count: {
+            select: { viewers: true },
+          },
+        },
+      }),
+      this.prisma.courseStream.count({ where: where as any }),
+    ]);
+
+    return {
+      data: streams,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  // Get streaming statistics for admin dashboard
+  async getStreamingStats() {
+    const [totalStreams, liveNow, scheduledCount, endedCount, totalViewers] = await Promise.all([
+      this.prisma.courseStream.count(),
+      this.prisma.courseStream.count({ where: { status: 'LIVE' } }),
+      this.prisma.courseStream.count({ where: { status: 'SCHEDULED' } }),
+      this.prisma.courseStream.count({ where: { status: 'ENDED' } }),
+      this.prisma.streamViewer.count(),
+    ]);
+
+    return {
+      totalStreams,
+      liveNow,
+      scheduled: scheduledCount,
+      ended: endedCount,
+      totalViewers,
+    };
   }
 
   // Get active streams
@@ -289,5 +400,90 @@ export class StreamingService {
         },
       },
     });
+  }
+
+  // Get upcoming streams for a course (for course page)
+  async getUpcomingStreams(courseId: string) {
+    return this.prisma.courseStream.findMany({
+      where: {
+        courseId,
+        OR: [
+          {
+            status: 'SCHEDULED',
+            scheduledAt: { gte: new Date() },
+          },
+          {
+            status: 'LIVE',
+          },
+        ],
+      },
+      orderBy: { scheduledAt: 'asc' },
+      include: {
+        instructor: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+      },
+      take: 5,
+    });
+  }
+
+  // Get recorded (ended) streams for a course
+  async getRecordedStreams(courseId: string) {
+    return this.prisma.courseStream.findMany({
+      where: {
+        courseId,
+        status: 'ENDED',
+      },
+      orderBy: { endedAt: 'desc' },
+      include: {
+        instructor: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+        _count: {
+          select: { viewers: true },
+        },
+      },
+      take: 10,
+    });
+  }
+
+  // Save recording after stream ends
+  async saveRecording(streamId: string, instructorId: string, videoAssetId: string) {
+    const stream = await this.prisma.courseStream.findFirst({
+      where: { id: streamId, instructorId },
+    });
+
+    if (!stream) {
+      throw new NotFoundException('Stream not found or you are not the instructor');
+    }
+
+    const updatedStream = await this.prisma.courseStream.update({
+      where: { id: streamId },
+      data: {
+        status: 'ENDED',
+        endedAt: new Date(),
+      },
+    });
+
+    await this.prisma.videoAsset.update({
+      where: { id: videoAssetId },
+      data: {
+        status: 'READY',
+        processedAt: new Date(),
+      },
+    });
+
+    return {
+      stream: updatedStream,
+      recordingAssetId: videoAssetId,
+    };
   }
 }

@@ -476,4 +476,56 @@ export class DashboardService {
       })),
     };
   }
+
+  async getTopInstructors(limit: number = 5) {
+    // Get courses with their instructors and enrollment counts
+    const courses = await this.prisma.course.findMany({
+      where: {
+        status: CourseStatus.PUBLISHED,
+        instructors: { some: {} }, // Has at least one instructor
+      },
+      select: {
+        id: true,
+        instructors: { select: { userId: true } },
+        _count: { select: { enrollments: true } },
+      },
+    });
+
+    // Group by instructor
+    const instructorMap = new Map<string, { courses: number; students: number }>();
+    courses.forEach((course) => {
+      course.instructors.forEach((instructor) => {
+        const existing = instructorMap.get(instructor.userId) || { courses: 0, students: 0 };
+        instructorMap.set(instructor.userId, {
+          courses: existing.courses + 1,
+          students: existing.students + course._count.enrollments,
+        });
+      });
+    });
+
+    // Get instructor details
+    const instructors = await this.prisma.user.findMany({
+      where: {
+        role: Role.INSTRUCTOR,
+        id: { in: Array.from(instructorMap.keys()) },
+      },
+      select: { id: true, name: true, avatarUrl: true },
+    });
+
+    const instructorStats = instructors.map((instructor) => {
+      const stats = instructorMap.get(instructor.id) || { courses: 0, students: 0 };
+      return {
+        id: instructor.id,
+        name: instructor.name,
+        avatarUrl: instructor.avatarUrl,
+        courses: stats.courses,
+        students: stats.students,
+        rating: 0,
+      };
+    });
+
+    return instructorStats
+      .sort((a, b) => b.students - a.students)
+      .slice(0, limit);
+  }
 }

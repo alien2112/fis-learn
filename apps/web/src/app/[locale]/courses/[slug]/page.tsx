@@ -3,14 +3,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { communityApi } from '@/lib/api/community';
 import { useAuth } from '@/contexts/auth-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookOpen, CheckCircle, GraduationCap, MessageCircle, Users2 } from 'lucide-react';
+import { BookOpen, Calendar, CheckCircle, GraduationCap, MessageCircle, Radio, Users2 } from 'lucide-react';
 import { enrollmentApi } from '@/lib/api';
+import apiClient from '@/lib/api/client';
 
 interface CourseInstructor {
   id: string;
@@ -49,8 +51,22 @@ interface CourseDetail {
   _count?: { enrollments?: number };
 }
 
-const formatEnum = (value?: string | null) => {
+interface CourseStream {
+  id: string;
+  title: string;
+  status: 'SCHEDULED' | 'LIVE' | 'ENDED';
+  scheduledAt?: string | null;
+  endedAt?: string | null;
+  viewerCount: number;
+  instructor: { id: string; name: string; avatarUrl?: string | null };
+  _count?: { viewers: number };
+}
+
+const formatEnum = (value?: string | null, t?: any) => {
   if (!value) return 'N/A';
+  if (t) {
+    return t(`levels.${value}`);
+  }
   return value
     .toLowerCase()
     .split('_')
@@ -67,6 +83,8 @@ const getInitials = (name: string) =>
     .toUpperCase();
 
 export default function CourseDetailPage() {
+  const t = useTranslations('course_details');
+  const tCourses = useTranslations('courses');
   const params = useParams();
   const slug = Array.isArray(params?.slug) ? params.slug[0] : params?.slug;
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -76,6 +94,7 @@ export default function CourseDetailPage() {
   const [enrolled, setEnrolled] = useState(false);
   const [progressMap, setProgressMap] = useState<Map<string, { completed: boolean }>>(new Map());
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [upcomingStreams, setUpcomingStreams] = useState<CourseStream[]>([]);
 
   useEffect(() => {
     if (!slug) return;
@@ -132,6 +151,26 @@ export default function CourseDetailPage() {
     return () => { cancelled = true; };
   }, [user, course]);
 
+  // Fetch upcoming/live streams for this course
+  useEffect(() => {
+    if (!course) return;
+    let cancelled = false;
+
+    const loadStreams = async () => {
+      try {
+        const { data } = await apiClient.get(`/streaming/course/${course.id}/upcoming`);
+        if (!cancelled && data?.data) {
+          setUpcomingStreams(data.data);
+        }
+      } catch {
+        // Streaming data is optional — fail silently
+      }
+    };
+
+    loadStreams();
+    return () => { cancelled = true; };
+  }, [course]);
+
   const handleEnroll = async () => {
     if (!course) return;
     setIsEnrolling(true);
@@ -170,7 +209,7 @@ export default function CourseDetailPage() {
       <div className="container py-12">
         <Card>
           <CardHeader>
-            <CardTitle>Course unavailable</CardTitle>
+            <CardTitle>{t('na')}</CardTitle>
             <CardDescription>{error}</CardDescription>
           </CardHeader>
         </Card>
@@ -183,8 +222,8 @@ export default function CourseDetailPage() {
       <div className="container py-12">
         <Card>
           <CardHeader>
-            <CardTitle>Course not found</CardTitle>
-            <CardDescription>We couldn&apos;t find this course.</CardDescription>
+            <CardTitle>{t('na')}</CardTitle>
+            <CardDescription>{t('na')}</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -199,35 +238,35 @@ export default function CourseDetailPage() {
           <div className="space-y-6">
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">{course.category?.name || 'General'}</Badge>
-              <Badge variant="outline">{formatEnum(course.level)}</Badge>
+              <Badge variant="outline">{formatEnum(course.level, tCourses)}</Badge>
               <Badge variant="outline">{course.language.toUpperCase()}</Badge>
             </div>
 
             <div className="space-y-4">
               <h1 className="text-4xl font-bold tracking-tight">{course.title}</h1>
               <p className="text-lg text-muted-foreground">
-                {course.description || 'Build durable skills with structured lessons and active community support.'}
+                {course.description || t('description_placeholder')}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-primary" />
-                {totalSections} sections, {totalLessons} lessons
+                {t('sections_count', { count: totalSections })}, {t('lessons_count', { count: totalLessons })}
               </div>
               <div className="flex items-center gap-2">
                 <Users2 className="h-4 w-4 text-primary" />
-                {enrollments} enrolled
+                {t('enrolled_count', { count: enrollments })}
               </div>
               <div className="flex items-center gap-2">
                 <GraduationCap className="h-4 w-4 text-primary" />
-                {course.pricingModel === 'FREE' ? 'Free' : course.price ? `$${course.price}` : 'Paid'}
+                {course.pricingModel === 'FREE' ? t('free') : course.price ? `$${course.price}` : t('paid')}
               </div>
             </div>
 
             {course.instructors.length > 0 && (
               <div className="space-y-3">
-                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Instructors</p>
+                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t('instructors')}</p>
                 <div className="flex flex-wrap gap-3">
                   {course.instructors.map((instructor) => (
                     <div
@@ -240,7 +279,7 @@ export default function CourseDetailPage() {
                       <div>
                         <p className="text-sm font-medium">{instructor.user.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {instructor.isPrimary ? 'Lead instructor' : 'Instructor'}
+                          {instructor.isPrimary ? t('lead_instructor') : t('instructor')}
                         </p>
                       </div>
                     </div>
@@ -252,13 +291,13 @@ export default function CourseDetailPage() {
 
           <Card className="h-fit border-primary/20 bg-background/80 shadow-lg">
             <CardHeader>
-              <CardTitle>Course access</CardTitle>
+              <CardTitle>{t('access_title')}</CardTitle>
               <CardDescription>
                 {enrolled
-                  ? 'You are enrolled. Start learning!'
+                  ? t('access_enrolled')
                   : course.pricingModel === 'FREE'
-                    ? 'This course is free to join.'
-                    : 'A subscription is required to access this course.'}
+                    ? t('access_free_desc')
+                    : t('access_paid_desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -266,48 +305,103 @@ export default function CourseDetailPage() {
                 <>
                   {course.pricingModel === 'FREE' ? (
                     <Button className="w-full" onClick={handleEnroll} disabled={isEnrolling}>
-                      {isEnrolling ? 'Enrolling…' : 'Enroll for free'}
+                      {isEnrolling ? t('enrolling') : t('enroll_free')}
                     </Button>
                   ) : (
                     <Button asChild className="w-full">
-                      <Link href={`/checkout/${course.id}`}>Subscribe to access</Link>
+                      <Link href={`/checkout/${course.id}`}>{t('subscribe_access')}</Link>
                     </Button>
                   )}
                 </>
               )}
               {!user && (
                 <Button asChild className="w-full">
-                  <Link href="/login">Sign in</Link>
+                  <Link href="/login">{t('sign_in')}</Link>
                 </Button>
               )}
               {enrolled && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Progress</span>
+                  <span className="text-muted-foreground">{t('progress')}</span>
                   <span className="font-medium">
-                    {[...progressMap.values()].filter((l) => l.completed).length}/{progressMap.size} completed
+                    {t('completed_fraction', { completed: Array.from(progressMap.values()).filter((l) => l.completed).length, total: progressMap.size })}
                   </span>
                 </div>
               )}
               <Button asChild variant="outline" className="w-full">
                 <Link href={`/courses/${course.slug}/community`}>
                   <MessageCircle className="mr-2 h-4 w-4" />
-                  {user ? 'Enter community' : 'View community'}
+                  {user ? t('enter_community') : t('view_community')}
                 </Link>
               </Button>
               <Button asChild variant="outline" className="w-full">
-                <Link href="#syllabus">View syllabus</Link>
+                <Link href="#syllabus">{t('view_syllabus')}</Link>
               </Button>
             </CardContent>
           </Card>
         </div>
       </section>
 
+      {/* Live & Upcoming Sessions */}
+      {upcomingStreams.length > 0 && (
+        <section className="container py-8">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Radio className="h-5 w-5 text-red-500" />
+            {upcomingStreams.some((s) => s.status === 'LIVE')
+              ? t('live_now')
+              : t('upcoming_sessions')}
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {upcomingStreams.map((stream) => (
+              <Card key={stream.id} className={stream.status === 'LIVE' ? 'border-red-500/50' : ''}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium">{stream.title}</CardTitle>
+                    {stream.status === 'LIVE' && (
+                      <Badge variant="destructive" className="text-xs animate-pulse">
+                        {t('live_now')}
+                      </Badge>
+                    )}
+                  </div>
+                  {stream.instructor && (
+                    <CardDescription className="text-xs">
+                      {stream.instructor.name}
+                    </CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent className="flex items-center justify-between">
+                  {stream.scheduledAt && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(stream.scheduledAt).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  )}
+                  {stream.status === 'LIVE' && enrolled ? (
+                    <Button size="sm" variant="destructive" asChild>
+                      <Link href={`/streaming/${stream.id}`}>{t('join_live')}</Link>
+                    </Button>
+                  ) : stream.status === 'LIVE' ? (
+                    <Badge variant="outline" className="text-xs">
+                      {t('viewers_count', { count: stream.viewerCount })}
+                    </Badge>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section id="syllabus" className="container grid gap-8 py-12 lg:grid-cols-[1.4fr_0.6fr]">
         <div className="space-y-6">
           <div>
-            <h2 className="text-2xl font-semibold">Course outline</h2>
+            <h2 className="text-2xl font-semibold">{t('syllabus_title')}</h2>
             <p className="text-muted-foreground">
-              Structured sections with clear progress checkpoints.
+              {t('syllabus_desc')}
             </p>
           </div>
 
@@ -315,8 +409,8 @@ export default function CourseDetailPage() {
             {course.sections.length === 0 ? (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">No sections yet</CardTitle>
-                  <CardDescription>The instructor is preparing the syllabus.</CardDescription>
+                  <CardTitle className="text-base">{t('no_sections_title')}</CardTitle>
+                  <CardDescription>{t('no_sections_desc')}</CardDescription>
                 </CardHeader>
               </Card>
             ) : (
@@ -327,7 +421,7 @@ export default function CourseDetailPage() {
                       <CardTitle className="text-base">
                         {index + 1}. {section.title}
                       </CardTitle>
-                      <Badge variant="outline">{section.lessons.length} lessons</Badge>
+                      <Badge variant="outline">{t('lessons_count', { count: section.lessons.length })}</Badge>
                     </div>
                     {section.description && (
                       <CardDescription>{section.description}</CardDescription>
@@ -358,7 +452,7 @@ export default function CourseDetailPage() {
                               </span>
                             )}
                             {lesson.isFreePreview && (
-                              <Badge variant="secondary" className="text-xs">Preview</Badge>
+                              <Badge variant="secondary" className="text-xs">{t('preview')}</Badge>
                             )}
                           </li>
                         );
@@ -374,15 +468,15 @@ export default function CourseDetailPage() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Community focus</CardTitle>
-              <CardDescription>Stay organized, safe, and learning-first.</CardDescription>
+              <CardTitle className="text-base">{t('community_focus_title')}</CardTitle>
+              <CardDescription>{t('community_focus_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p>Instructor announcements keep everyone aligned.</p>
-              <p>Q&A threads help you get answers quickly.</p>
-              <p>Discussion channels encourage peer learning.</p>
+              <p>{t('community_point_1')}</p>
+              <p>{t('community_point_2')}</p>
+              <p>{t('community_point_3')}</p>
               <Button asChild variant="outline" className="w-full">
-                <Link href={`/courses/${course.slug}/community`}>Go to community</Link>
+                <Link href={`/courses/${course.slug}/community`}>{t('go_to_community')}</Link>
               </Button>
             </CardContent>
           </Card>

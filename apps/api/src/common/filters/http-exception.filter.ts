@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { redactUrl } from '../utils/pii-redactor';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -40,10 +41,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     }
 
+    const safeUrl = redactUrl(request.url);
+
     const errorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
-      path: request.url,
+      path: safeUrl,
       method: request.method,
       message,
       ...(errors && { errors }),
@@ -52,12 +55,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // Log error details
     if (status >= 500) {
       this.logger.error(
-        `${request.method} ${request.url} - ${status}`,
+        `${request.method} ${safeUrl} - ${status}`,
         JSON.stringify(errorResponse),
       );
+      // Capture 5xx errors in Sentry (don't capture 4xx client errors)
+      try {
+        const Sentry = require('@sentry/node');
+        Sentry.captureException(exception, {
+          tags: { httpStatus: status },
+          extra: { url: safeUrl, method: request.method },
+        });
+      } catch {
+        // Sentry not configured, ignore
+      }
     } else {
       this.logger.warn(
-        `${request.method} ${request.url} - ${status}: ${message}`,
+        `${request.method} ${safeUrl} - ${status}: ${message}`,
       );
     }
 

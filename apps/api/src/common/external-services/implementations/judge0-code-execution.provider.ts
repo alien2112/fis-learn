@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { randomBytes } from 'crypto';
 import {
   CodeExecutionProvider,
   ProgrammingLanguage,
@@ -231,7 +232,7 @@ export class Judge0CodeExecutionProvider implements CodeExecutionProvider {
     request: Omit<CodeExecutionRequest, 'stdin'>,
     testCases: TestCase[],
   ): Promise<BatchTestResult> {
-    const submissionId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const submissionId = `batch_${Date.now()}_${randomBytes(6).toString('hex')}`;
     const testResults: TestCaseResult[] = [];
     let testsPassed = 0;
     let totalPoints = 0;

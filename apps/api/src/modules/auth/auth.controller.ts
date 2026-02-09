@@ -8,6 +8,7 @@ import {
   Res,
   Req,
 } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import {
   ApiTags,
   ApiOperation,
@@ -60,11 +61,20 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (matches refresh expiry)
       path: '/api/v1/auth', // Only sent to auth endpoints
     });
+    // CSRF double-submit cookie (readable by JS, NOT httpOnly)
+    res.cookie('csrf-token', randomBytes(32).toString('hex'), {
+      httpOnly: false,
+      secure: this.isProduction,
+      sameSite: this.isProduction ? 'strict' : 'lax',
+      maxAge: 15 * 60 * 1000,
+      path: '/',
+    });
   }
 
   private clearAuthCookies(res: Response) {
     res.clearCookie('accessToken', { path: '/' });
     res.clearCookie('refreshToken', { path: '/api/v1/auth' });
+    res.clearCookie('csrf-token', { path: '/' });
   }
 
   @Public()

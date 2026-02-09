@@ -1,4 +1,4 @@
-import { Module, DynamicModule } from '@nestjs/common';
+import { Module, DynamicModule, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { CODE_EXECUTION_PROVIDER } from '../../common/external-services';
@@ -7,6 +7,8 @@ import { CodeExecutionService } from './code-execution.service';
 import { CodeExecutionController } from './code-execution.controller';
 import { CodeExerciseService } from './code-exercise.service';
 import { CodeExerciseController } from './code-exercise.controller';
+import { CoursesModule } from '../courses/courses.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 /**
  * Code Execution Module
@@ -46,7 +48,7 @@ export class CodeExecutionModule {
   static forRoot(): DynamicModule {
     return {
       module: CodeExecutionModule,
-      imports: [ConfigModule, PrismaModule],
+      imports: [ConfigModule, PrismaModule, forwardRef(() => CoursesModule), forwardRef(() => NotificationsModule)],
       controllers: [CodeExecutionController, CodeExerciseController],
       providers: [
         CodeExecutionService,

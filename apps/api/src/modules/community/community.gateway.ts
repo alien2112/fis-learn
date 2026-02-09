@@ -13,7 +13,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuthUser } from '@/modules/auth/types/jwt-payload.interface';
-import { Inject } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 
 interface JoinPayload {
@@ -26,6 +26,7 @@ interface SendPayload {
   body: string;
   parentId?: string;
   clientId?: string;
+  lessonId?: string; // Optional lesson-level discussion
 }
 
 @WebSocketGateway({
@@ -42,6 +43,7 @@ export class CommunityGateway implements OnGatewayInit {
   @WebSocketServer()
   server: Server;
 
+  private readonly logger = new Logger(CommunityGateway.name);
   private redisClient: Redis;
 
   constructor(
@@ -58,7 +60,13 @@ export class CommunityGateway implements OnGatewayInit {
 
   afterInit(server: Server) {
     // Attach Redis adapter for multi-instance scaling
-    server.adapter(this.redisAdapter);
+    // When using a namespace gateway, Nest passes a Namespace here, not the root Server.
+    const io = (server as any)?.server ?? server;
+    if (typeof io?.adapter !== 'function') {
+      this.logger.warn('Socket.io adapter not available; skipping Redis adapter attachment.');
+      return;
+    }
+    io.adapter(this.redisAdapter);
   }
 
   async handleConnection(client: Socket) {
@@ -76,17 +84,26 @@ export class CommunityGateway implements OnGatewayInit {
   }
 
   private async authenticate(client: Socket): Promise<AuthUser> {
-    // Extract token from auth payload, Authorization header, or httpOnly cookie
-    let token =
-      client.handshake.auth?.token ||
-      client.handshake.headers?.authorization?.toString().replace('Bearer ', '');
+    let token: string | undefined;
 
+    // 1. Prefer httpOnly cookie (most secure, not accessible to JS)
+    const cookieHeader = client.handshake.headers?.cookie;
+    if (cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)accessToken=([^;]*)/);
+      token = match ? match[1] : undefined;
+    }
+
+    // 2. Fall back to Authorization header
     if (!token) {
-      const cookieHeader = client.handshake.headers?.cookie;
-      if (cookieHeader) {
-        const match = cookieHeader.match(/(?:^|;\s*)accessToken=([^;]*)/);
-        token = match ? match[1] : undefined;
+      const authHeader = client.handshake.headers?.authorization?.toString();
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.slice(7);
       }
+    }
+
+    // 3. Last resort: auth payload (for mobile apps that can't use cookies)
+    if (!token) {
+      token = client.handshake.auth?.token;
     }
 
     if (!token) {

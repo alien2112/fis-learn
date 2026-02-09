@@ -8,6 +8,7 @@ import { enrollmentApi } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { LiveCodeEditor } from '@/components/code-editor';
 import { VideoPlayer } from '@/components/video';
+import { YouTubePlayer } from '@/components/video/YouTubePlayer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -365,14 +366,18 @@ export default function LessonPage() {
             </CardHeader>
             <CardContent>
               {lesson.material.youtubeUrl ? (
-                <div className="aspect-video w-full rounded-lg overflow-hidden bg-muted">
-                  <iframe
-                    src={lesson.material.youtubeUrl.replace('watch?v=', 'embed/')}
-                    title={lesson.material.title}
-                    className="w-full h-full"
-                    allowFullScreen
-                  />
-                </div>
+                <YouTubePlayer
+                  youtubeUrl={lesson.material.youtubeUrl}
+                  title={lesson.material.title}
+                  lessonId={lessonId}
+                  courseId={courseId || undefined}
+                  onProgress={(percent) => {
+                    // Auto-mark complete at 90% watched
+                    if (percent >= 90 && !isCompleted) {
+                      handleMarkComplete();
+                    }
+                  }}
+                />
               ) : lesson.material.videoAssetId ? (
                 <VideoPlayer
                   assetId={lesson.material.videoAssetId}

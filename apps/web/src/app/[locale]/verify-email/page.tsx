@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api/v1';
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();

@@ -1,4 +1,4 @@
-import { IsArray, IsIn, IsString, MaxLength, ArrayMaxSize, ValidateNested } from 'class-validator';
+import { IsArray, IsIn, IsString, MaxLength, ArrayMaxSize, ValidateNested, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class MessageDto {
@@ -16,4 +16,18 @@ export class ChatMessageDto {
   @ValidateNested({ each: true })
   @Type(() => MessageDto)
   messages: MessageDto[];
+}
+
+export class AuthenticatedChatMessageDto extends ChatMessageDto {
+  @IsOptional()
+  @IsString()
+  courseId?: string;
+
+  @IsOptional()
+  @IsString()
+  lessonId?: string;
+
+  @IsOptional()
+  @IsString()
+  exerciseId?: string;
 }

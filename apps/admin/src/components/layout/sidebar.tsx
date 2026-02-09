@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
 import {
@@ -15,12 +16,19 @@ import {
   ChevronLeft,
   ChevronRight,
   GitBranch,
+  CreditCard,
+  UserCheck,
+  Video,
+  MessageSquare,
+  Bell,
+  BarChart3,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 interface NavItem {
-  title: string;
+  titleKey: string;
   href: string;
   icon: React.ElementType;
   roles?: string[];
@@ -28,59 +36,102 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    title: 'Dashboard',
+    titleKey: 'dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
   },
   {
-    title: 'Users',
+    titleKey: 'users',
     href: '/users',
     icon: Users,
     roles: ['SUPER_ADMIN', 'ADMIN'],
   },
   {
-    title: 'Students',
+    titleKey: 'students',
     href: '/users/students',
     icon: GraduationCap,
     roles: ['SUPER_ADMIN', 'ADMIN'],
   },
   {
-    title: 'Instructors',
+    titleKey: 'instructors',
     href: '/users/instructors',
     icon: Users,
     roles: ['SUPER_ADMIN', 'ADMIN'],
   },
   {
-    title: 'Categories',
+    titleKey: 'categories',
     href: '/categories',
     icon: FolderTree,
     roles: ['SUPER_ADMIN', 'ADMIN'],
   },
   {
-    title: 'Courses',
+    titleKey: 'courses',
     href: '/courses',
     icon: BookOpen,
   },
   {
-    title: 'Skill Trees',
+    titleKey: 'skillTrees',
     href: '/skill-trees',
     icon: GitBranch,
     roles: ['SUPER_ADMIN', 'ADMIN', 'INSTRUCTOR'],
   },
   {
-    title: 'Access Codes',
+    titleKey: 'accessCodes',
     href: '/access-codes',
     icon: KeyRound,
     roles: ['SUPER_ADMIN', 'ADMIN'],
   },
   {
-    title: 'Settings',
+    titleKey: 'subscriptions',
+    href: '/subscriptions',
+    icon: CreditCard,
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+  {
+    titleKey: 'enrollments',
+    href: '/enrollments',
+    icon: UserCheck,
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+  {
+    titleKey: 'streaming',
+    href: '/streaming',
+    icon: Video,
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+  {
+    titleKey: 'community',
+    href: '/community',
+    icon: MessageSquare,
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+  {
+    titleKey: 'notifications',
+    href: '/notifications',
+    icon: Bell,
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+  {
+    titleKey: 'analytics',
+    href: '/analytics',
+    icon: BarChart3,
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+  {
+    titleKey: 'auditLogs',
+    href: '/audit-logs',
+    icon: FileText,
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+  {
+    titleKey: 'settings',
     href: '/settings',
     icon: Settings,
   },
 ];
 
 export function Sidebar() {
+  const t = useTranslations('common');
   const pathname = usePathname();
   const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
@@ -102,7 +153,7 @@ export function Sidebar() {
           {!collapsed && (
             <Link href="/dashboard" className="flex items-center space-x-2">
               <GraduationCap className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold">FIS Learn</span>
+              <span className="text-xl font-bold">{t('appName')}</span>
             </Link>
           )}
           {collapsed && (
@@ -114,6 +165,7 @@ export function Sidebar() {
         <nav className="flex-1 space-y-1 overflow-y-auto p-2">
           {filteredNavItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const title = t(item.titleKey);
             return (
               <Link
                 key={item.href}
@@ -125,10 +177,10 @@ export function Sidebar() {
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
                   collapsed && 'justify-center'
                 )}
-                title={collapsed ? item.title : undefined}
+                title={collapsed ? title : undefined}
               >
                 <item.icon className={cn('h-5 w-5', !collapsed && 'mr-3')} />
-                {!collapsed && item.title}
+                {!collapsed && title}
               </Link>
             );
           })}
@@ -147,7 +199,7 @@ export function Sidebar() {
             ) : (
               <>
                 <ChevronLeft className="h-4 w-4 mr-2" />
-                Collapse
+                {t('collapse')}
               </>
             )}
           </Button>

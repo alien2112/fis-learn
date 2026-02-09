@@ -148,6 +148,58 @@ export class StreamingController {
     return { success: true };
   }
 
+  @Get('course/:courseId/upcoming')
+  @ApiOperation({ summary: 'Get upcoming scheduled streams for a course' })
+  async getUpcomingStreams(@Param('courseId') courseId: string) {
+    const streams = await this.streamingService.getUpcomingStreams(courseId);
+    return { success: true, data: streams };
+  }
+
+  @Get('course/:courseId/recordings')
+  @ApiOperation({ summary: 'Get recorded (ended) streams for a course' })
+  async getRecordedStreams(@Param('courseId') courseId: string) {
+    const streams = await this.streamingService.getRecordedStreams(courseId);
+    return { success: true, data: streams };
+  }
+
+  @Post(':id/recording')
+  @Roles(Role.ADMIN, Role.INSTRUCTOR)
+  @ApiOperation({ summary: 'Save stream recording reference' })
+  async saveRecording(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body('videoAssetId') videoAssetId: string,
+  ) {
+    const result = await this.streamingService.saveRecording(id, user.id, videoAssetId);
+    return { success: true, data: result };
+  }
+
+  // ============ ADMIN ============
+
+  @Get('admin/all')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get all streams (admin)' })
+  async getAllStreamsAdmin(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const result = await this.streamingService.getAllStreamsAdmin({
+      status,
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
+    return { success: true, ...result };
+  }
+
+  @Get('admin/stats')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get streaming statistics (admin)' })
+  async getStreamingStats() {
+    const stats = await this.streamingService.getStreamingStats();
+    return { success: true, data: stats };
+  }
+
   // ============ DISCOVERY ============
 
   @Get('active')

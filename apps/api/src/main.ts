@@ -6,8 +6,10 @@ import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
 import { Request, Response } from 'express';
 import { AppModule } from './app.module';
+import { validateEnvironment } from './common/config/env.validation';
 
 async function bootstrap() {
+  validateEnvironment();
   const logger = new Logger('Bootstrap');
 
   // Create app with raw body for webhook signature verification
@@ -25,7 +27,11 @@ async function bootstrap() {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
+          // Only allow unsafe-inline for Swagger UI in non-production
+          styleSrc:
+            process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true'
+              ? ["'self'", "'unsafe-inline'"]
+              : ["'self'"],
           imgSrc: ["'self'", 'data:', 'https:'],
           scriptSrc: ["'self'"],
         },
@@ -87,17 +93,14 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, etc.)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else if (process.env.NODE_ENV !== 'production') {
-        // Allow any origin in development
+      // In production, strictly enforce origin allowlist
+      // In development, allow listed localhost origins
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        if (process.env.NODE_ENV === 'production') {
+          logger.warn(`CORS rejection: ${origin}`);
+        }
         callback(new Error('Not allowed by CORS'));
       }
     },
@@ -108,6 +111,8 @@ async function bootstrap() {
       'X-Request-ID',
       'X-Client-Version',
       'Accept-Language',
+      'X-Requested-With',
+      'X-CSRF-Token',
     ],
     exposedHeaders: [
       'X-Request-ID',
@@ -119,20 +124,13 @@ async function bootstrap() {
     maxAge: 3600,
   });
 
+  // ============ BODY SIZE LIMIT ============
+  const express = require('express');
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
   // ============ COOKIE PARSER ============
   app.use(cookieParser());
-
-  // ============ CSRF PROTECTION ============
-  // Configure cookies to be secure with SameSite protection
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-  };
-
-  // Store cookie options for use in auth controller
-  (app as any).cookieOptions = cookieOptions;
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -230,7 +228,33 @@ Errors follow a consistent format with machine-readable codes:
   if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
     logger.log(`Swagger docs available at http://localhost:${port}/api/docs`);
   }
+
+  // ============ GRACEFUL SHUTDOWN ============
+  app.enableShutdownHooks();
+
+  const shutdown = async (signal: string) => {
+    logger.log(`Received ${signal}. Starting graceful shutdown...`);
+
+    // Give in-flight requests 10 seconds to complete
+    const timeout = setTimeout(() => {
+      logger.warn('Graceful shutdown timed out, forcing exit');
+      process.exit(1);
+    }, 10000);
+
+    try {
+      await app.close();
+      clearTimeout(timeout);
+      logger.log('Graceful shutdown complete');
+      process.exit(0);
+    } catch (err) {
+      logger.error('Error during shutdown', err);
+      clearTimeout(timeout);
+      process.exit(1);
+    }
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 bootstrap();
-

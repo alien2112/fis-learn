@@ -159,7 +159,8 @@ export class CommunityService {
       cursor,
       limit = 30,
       parentId,
-    }: { cursor?: string; limit?: number; parentId?: string },
+      lessonId,
+    }: { cursor?: string; limit?: number; parentId?: string; lessonId?: string },
   ) {
     const channel = await this.ensureChannelAccess(channelId, user);
 
@@ -171,6 +172,7 @@ export class CommunityService {
       where: {
         channelId,
         parentId: parentId ?? null,
+        lessonId: lessonId ?? null, // Filter by lessonId if provided
         status: statusFilter,
       },
       orderBy: [
@@ -211,7 +213,8 @@ export class CommunityService {
       body,
       parentId,
       clientId,
-    }: { body: string; parentId?: string; clientId?: string },
+      lessonId,
+    }: { body: string; parentId?: string; clientId?: string; lessonId?: string },
   ) {
     const cleanedBody = body?.trim();
     if (!cleanedBody) {
@@ -291,6 +294,7 @@ export class CommunityService {
         authorId: user.id,
         body: sanitizedBody,
         parentId: parentId ?? null,
+        lessonId: lessonId ?? null,
         clientId,
       },
       include: {
@@ -411,7 +415,7 @@ export class CommunityService {
       create: {
         messageId,
         reporterId: user.id,
-        reason: dompurify.sanitize(reason, {
+        reason: dompurify.sanitize(reason || '', {
           ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'code', 'pre', 'p', 'br', 'ul', 'ol', 'li'],
           ALLOWED_ATTR: ['href', 'target', 'rel'],
         }),
@@ -537,5 +541,77 @@ export class CommunityService {
     });
 
     return updated;
+  }
+
+  async getReportedMessages() {
+    const reports = await this.prisma.communityMessage.findMany({
+      where: { flags: { some: {} } },
+      include: {
+        author: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
+        channel: {
+          select: {
+            id: true,
+            name: true,
+            courseId: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    return reports;
+  }
+
+  async getPinnedMessages() {
+    const messages = await this.prisma.communityMessage.findMany({
+      where: {
+        isPinned: true,
+        status: CommunityMessageStatus.ACTIVE,
+      },
+      include: {
+        author: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
+        channel: {
+          select: {
+            id: true,
+            name: true,
+            courseId: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    return messages;
+  }
+
+  async getLockedThreads() {
+    const messages = await this.prisma.communityMessage.findMany({
+      where: {
+        isLocked: true,
+        status: CommunityMessageStatus.ACTIVE,
+      },
+      include: {
+        author: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
+        channel: {
+          select: {
+            id: true,
+            name: true,
+            courseId: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    return messages;
   }
 }

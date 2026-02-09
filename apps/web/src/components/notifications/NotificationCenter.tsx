@@ -5,7 +5,7 @@ import { Socket } from 'socket.io-client';
 import { X, CheckCheck } from 'lucide-react';
 import { NotificationItem, Notification } from './NotificationItem';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api/v1';
 
 interface NotificationCenterProps {
   socket: Socket | null;
@@ -30,7 +30,7 @@ export function NotificationCenter({
     setLoading(true);
     try {
       const res = await fetch(
-        `${API_URL}/api/v1/notifications?page=${pageNum}&limit=20`,
+        `${API_URL}/notifications?page=${pageNum}&limit=20`,
         { credentials: 'include' }
       );
       const data = await res.json();
@@ -75,7 +75,7 @@ export function NotificationCenter({
 
   const handleMarkAsRead = async (id: string) => {
     try {
-      await fetch(`${API_URL}/api/v1/notifications/${id}/read`, {
+      await fetch(`${API_URL}/notifications/${id}/read`, {
         method: 'PATCH',
         credentials: 'include',
       });
@@ -90,7 +90,7 @@ export function NotificationCenter({
 
   const handleMarkAllAsRead = async () => {
     try {
-      await fetch(`${API_URL}/api/v1/notifications/read-all`, {
+      await fetch(`${API_URL}/notifications/read-all`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -103,7 +103,7 @@ export function NotificationCenter({
 
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`${API_URL}/api/v1/notifications/${id}`, {
+      await fetch(`${API_URL}/notifications/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });

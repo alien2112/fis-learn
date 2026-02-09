@@ -5,6 +5,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -21,6 +22,9 @@ import {
   CodeSubmissionStatus,
   Prisma,
 } from '@prisma/client';
+import { ProgressService } from '../courses/progress.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/dto';
 
 type CodeExerciseWithTestCases = CodeExercise & {
   testCases: CodeTestCase[];
@@ -45,6 +49,10 @@ export class CodeExerciseService {
     @Inject(CODE_EXECUTION_PROVIDER)
     private readonly codeExecutionProvider: CodeExecutionProvider,
     private readonly codeExecutionService: CodeExecutionService,
+    @Inject(forwardRef(() => ProgressService))
+    private readonly progressService: ProgressService,
+    @Inject(forwardRef(() => NotificationsService))
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // ============ EXERCISE MANAGEMENT ============
@@ -409,6 +417,14 @@ export class CodeExerciseService {
 
       await this.codeExecutionService.trackExecution(userId);
 
+      // Emit notification for graded submission
+      await this.emitSubmissionGradedNotification(userId, updatedSubmission, exercise);
+
+      // Auto-complete lesson if this was an ACCEPTED submission and all required exercises are done
+      if (overallStatus === 'ACCEPTED') {
+        await this.handleLessonCompletionOnExerciseSuccess(userId, exercise);
+      }
+
       return updatedSubmission;
     } catch (error: any) {
       // Update submission with error
@@ -605,6 +621,91 @@ export class CodeExerciseService {
   }
 
   // ============ HELPERS ============
+
+  /**
+   * Emit SUBMISSION_GRADED notification
+   */
+  private async emitSubmissionGradedNotification(
+    userId: string,
+    submission: CodeSubmission,
+    exercise: CodeExercise,
+  ): Promise<void> {
+    try {
+      const isAccepted = submission.status === 'ACCEPTED';
+      const title = isAccepted
+        ? 'Exercise Completed!'
+        : `Exercise ${submission.status.replace(/_/g, ' ').toLowerCase()}`;
+
+      const body = isAccepted
+        ? `Congratulations! You passed "${exercise.title}" with ${submission.pointsEarned}/${submission.pointsTotal} points.`
+        : `Your submission for "${exercise.title}" was ${submission.status.replace(/_/g, ' ').toLowerCase()}. ${submission.testsPassed}/${submission.testsTotal} tests passed.`;
+
+      await this.notificationsService.create(
+        userId,
+        NotificationType.SUBMISSION_GRADED,
+        title,
+        body,
+        {
+          submissionId: submission.id,
+          exerciseId: exercise.id,
+          lessonId: exercise.lessonId,
+          status: submission.status,
+          pointsEarned: submission.pointsEarned,
+          pointsTotal: submission.pointsTotal,
+        },
+      );
+    } catch (error: any) {
+      // Don't fail the submission if notification fails
+      this.logger.error(`Failed to send submission notification: ${error.message}`);
+    }
+  }
+
+  /**
+   * Handle lesson auto-completion when all required exercises pass
+   */
+  private async handleLessonCompletionOnExerciseSuccess(
+    userId: string,
+    exercise: CodeExercise,
+  ): Promise<void> {
+    try {
+      // Check if all required exercises are completed
+      const requiredStatus = await this.progressService.areRequiredExercisesCompleted(
+        userId,
+        exercise.lessonId,
+      );
+
+      if (requiredStatus.allCompleted) {
+        // Get the course ID for this lesson
+        const lesson = await this.prisma.lesson.findUnique({
+          where: { id: exercise.lessonId },
+          include: { section: { select: { courseId: true } } },
+        });
+
+        if (!lesson) {
+          this.logger.warn(`Lesson ${exercise.lessonId} not found for auto-completion`);
+          return;
+        }
+
+        // Complete the lesson
+        const result = await this.progressService.completeLesson(
+          userId,
+          exercise.lessonId,
+          lesson.section.courseId,
+          'CODE_EXERCISE',
+          true, // auto-completed
+        );
+
+        if (result.success && !result.alreadyCompleted) {
+          this.logger.log(
+            `Lesson ${exercise.lessonId} auto-completed for user ${userId} via code exercise`,
+          );
+        }
+      }
+    } catch (error: any) {
+      // Don't fail the submission if lesson completion fails
+      this.logger.error(`Failed to auto-complete lesson: ${error.message}`);
+    }
+  }
 
   private mapStatusToPrisma(status: string): CodeSubmissionStatus {
     const statusMap: Record<string, CodeSubmissionStatus> = {

@@ -7,6 +7,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AnalyticsService } from './analytics.service';
 import { TrackEventDto } from './dto/track-event.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
@@ -20,10 +21,24 @@ export class AnalyticsController {
 
   @Post('events')
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 100, ttl: 60000 } }) // 100 requests per minute
   async trackEvents(
     @Body() body: { events: TrackEventDto[] },
     @Req() req: any,
   ) {
+    // Check cookie consent for analytics before tracking
+    const consentCookie = req.cookies?.['fis-cookie-consent'];
+    if (consentCookie) {
+      try {
+        const consent = JSON.parse(decodeURIComponent(consentCookie));
+        if (!consent.analytics) {
+          return { tracked: 0, reason: 'Analytics consent not granted' };
+        }
+      } catch {
+        // Invalid cookie, allow tracking (consent banner will re-appear)
+      }
+    }
+
     const deviceInfo = {
       deviceType: this.getDeviceType(req.headers['user-agent']),
       browser: this.getBrowser(req.headers['user-agent']),

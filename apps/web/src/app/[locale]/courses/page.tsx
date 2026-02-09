@@ -51,7 +51,7 @@ const HUB_WORLD: World = {
   id: 'hub',
   Icon: SlidersHorizontal,
   copy: {
-    label: { en: 'World Hub', ar: 'بوابة العوالم' },
+    label: { en: 'World Hub', ar: 'كل العوالم' },
     concept: { en: 'Gateway Mode', ar: 'مود البوابة' },
     headline: { en: 'Pick a World. Commit to the Vibe.', ar: 'اختار عالمك... وخش بالمود.' },
     subline: { en: 'Three universes. Three energies. Same platform.', ar: '٣ عوالم... ٣ شخصيات... نفس المنصة.' },
@@ -296,141 +296,298 @@ function isArabicText(s: string) {
 }
 
 function WorldBackdrop({ worldId }: { worldId: WorldKey }) {
+  // Hub World: Deep, cosmic, portal-like
   if (worldId === 'hub') {
     return (
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        <div
-          className="absolute inset-0 opacity-80"
-          style={{
-            backgroundImage:
-              'linear-gradient(to right, hsl(var(--border) / 0.30) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / 0.30) 1px, transparent 1px)',
-            backgroundSize: '64px 64px',
-            maskImage:
-              'radial-gradient(closest-side at 50% 10%, rgba(0,0,0,0.95), transparent 78%)',
-          }}
-        />
-        <div
-          className="absolute -top-24 -right-24 h-96 w-96 rounded-full blur-3xl"
-          style={{
-            background: 'radial-gradient(circle at 30% 30%, rgba(0,229,255,0.30), transparent 62%)',
-          }}
-        />
-        <div
-          className="absolute -top-20 -left-24 h-96 w-96 rounded-full blur-3xl"
-          style={{
-            background: 'radial-gradient(circle at 30% 30%, rgba(42,75,255,0.22), transparent 64%)',
-          }}
-        />
-        <div
-          className="absolute -bottom-28 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full blur-3xl"
-          style={{
-            background: 'radial-gradient(circle at 30% 30%, rgba(255,106,0,0.22), transparent 64%)',
-          }}
-        />
-      </div>
-    );
-  }
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div className="absolute inset-0 opacity-80 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-[#0a0a0a] to-black" />
 
-  if (worldId === 'programming') {
-    return (
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        <div
-          className="absolute inset-0 opacity-70"
-          style={{
-            backgroundImage:
-              'linear-gradient(to right, hsl(var(--border) / 0.35) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / 0.35) 1px, transparent 1px)',
-            backgroundSize: '56px 56px',
-            maskImage:
-              'radial-gradient(closest-side at 50% 10%, rgba(0,0,0,0.95), transparent 78%)',
-          }}
-        />
-        <div
-          className="absolute -top-24 -right-24 h-96 w-96 rounded-full blur-3xl"
-          style={{
-            background: 'radial-gradient(circle at 30% 30%, rgba(0,229,255,0.35), transparent 60%)',
-          }}
-        />
-        <div
-          className="absolute -bottom-24 -left-24 h-80 w-80 rounded-full blur-3xl"
-          style={{
-            background: 'radial-gradient(circle at 30% 30%, rgba(124,255,107,0.16), transparent 60%)',
-          }}
-        />
         <motion.div
-          className="absolute left-0 right-0 h-px bg-primary/40"
-          initial={{ y: 0, opacity: 0.0 }}
-          animate={{ y: [24, 420, 24], opacity: [0.0, 1, 0.0] }}
-          transition={{ duration: 7.5, repeat: Infinity, ease: 'linear' }}
-        />
-      </div>
-    );
-  }
-
-  if (worldId === 'graphic-design') {
-    return (
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        <div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.4 }}
+          transition={{ duration: 2 }}
           className="absolute inset-0"
           style={{
-            backgroundImage:
-              'radial-gradient(circle at 18% 18%, rgba(42,75,255,0.18), transparent 52%), radial-gradient(circle at 82% 24%, rgba(255,77,90,0.16), transparent 54%), radial-gradient(circle at 60% 86%, rgba(184,255,44,0.18), transparent 55%), repeating-linear-gradient(45deg, rgba(16,16,16,0.035) 0px, rgba(16,16,16,0.035) 1px, transparent 1px, transparent 12px)',
+            backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
           }}
         />
-        <div
-          className="absolute -top-16 left-10 h-56 w-56 rounded-[40px] blur-2xl opacity-70 animate-blob"
-          style={{ backgroundColor: 'rgba(255,77,90,0.22)' }}
+
+        <motion.div
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -top-[20%] left-[20%] w-[600px] h-[600px] rounded-full bg-primary/10 blur-[100px]"
         />
-        <div
-          className="absolute top-14 right-16 h-64 w-64 rounded-[48px] blur-2xl opacity-70 animate-blob"
-          style={{ backgroundColor: 'rgba(42,75,255,0.20)', animationDelay: '1.2s' }}
+
+        <motion.div
+          animate={{
+            scale: [1.1, 1, 1.1],
+            opacity: [0.2, 0.4, 0.2],
+          }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -top-[10%] right-[20%] w-[500px] h-[500px] rounded-full bg-purple-500/10 blur-[120px]"
         />
+
+        {/* Subtle twinkling stars */}
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute bg-white rounded-full"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: [0, 0.8, 0], scale: [0, 1, 0] }}
+            transition={{ duration: Math.random() * 3 + 2, repeat: Infinity, delay: Math.random() * 5 }}
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              width: Math.random() * 2 + 1,
+              height: Math.random() * 2 + 1
+            }}
+          />
+        ))}
+
+      </div>
+    );
+  }
+
+  // Programming World: Neon, Cyber, Matrix-like, Grid
+  if (worldId === 'programming') {
+    return (
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        {/* Dark base */}
+        <div className="absolute inset-0 bg-[#05070D]" />
+
+        {/* Grid System */}
         <div
-          className="absolute -bottom-20 left-1/2 h-72 w-72 -translate-x-1/2 rounded-[56px] blur-2xl opacity-70 animate-blob"
-          style={{ backgroundColor: 'rgba(184,255,44,0.16)', animationDelay: '2.4s' }}
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `linear-gradient(to right, #00E5FF 1px, transparent 1px),
+                              linear-gradient(to bottom, #00E5FF 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
+            maskImage: 'radial-gradient(circle at 50% 0%, black, transparent 80%)',
+          }}
+        />
+
+        {/* Animated Scanning Line */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-b from-transparent via-[#00E5FF]/10 to-transparent"
+          initial={{ top: '-100%' }}
+          animate={{ top: '100%' }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+          style={{ height: '30%' }}
+        />
+
+        {/* Floating Code Snippets */}
+        <div className="absolute inset-0 opacity-10 font-mono text-xs text-[#00E5FF] overflow-hidden">
+          {[
+            'const future = await build();', 'if (bug) fix(it);', 'while(alive) { learn(); }',
+            'git commit -m "legacy"', './deploy.sh --prod', 'sudo rm -rf /problems'
+          ].map((txt, i) => (
+            <motion.div
+              key={i}
+              className="absolute whitespace-nowrap"
+              initial={{ x: -200, opacity: 0 }}
+              animate={{ x: '100vw', opacity: [0, 1, 0] }}
+              transition={{ duration: 15 + i * 2, repeat: Infinity, delay: i * 3, ease: 'linear' }}
+              style={{ top: `${15 + i * 12}%` }}
+            >
+              {txt}
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Floating Symbols */}
+        {[...Array(10)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute text-[#00E5FF]/20 font-mono font-bold text-2xl"
+            initial={{ y: '100vh', opacity: 0 }}
+            animate={{ y: '-10vh', opacity: [0, 0.5, 0] }}
+            transition={{ duration: 10 + Math.random() * 10, repeat: Infinity, delay: Math.random() * 10, ease: 'linear' }}
+            style={{ left: `${Math.random() * 100}%` }}
+          >
+            {['{ }', '</>', '&&', '||', '=>', '[]'][i % 6]}
+          </motion.div>
+        ))}
+
+        {/* Glowing Orbs/Nodes */}
+        <motion.div
+          animate={{ opacity: [0.2, 0.5, 0.2] }}
+          transition={{ duration: 4, repeat: Infinity }}
+          className="absolute top-1/4 left-1/4 w-32 h-32 bg-[#00E5FF]/20 rounded-full blur-[60px]"
+        />
+        <motion.div
+          animate={{ opacity: [0.1, 0.3, 0.1] }}
+          transition={{ duration: 5, repeat: Infinity, delay: 1 }}
+          className="absolute bottom-1/3 right-1/4 w-48 h-48 bg-[#00E5FF]/10 rounded-full blur-[80px]"
         />
       </div>
     );
   }
 
-  return (
-    <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-      <div
-        className="absolute inset-0 opacity-70"
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, hsl(var(--border) / 0.35) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / 0.35) 1px, transparent 1px)',
-          backgroundSize: '72px 72px',
-          maskImage:
-            'radial-gradient(closest-side at 40% 10%, rgba(0,0,0,0.95), transparent 78%)',
-        }}
-      />
-      <div
-        className="absolute -top-20 -right-20 h-96 w-96 rounded-full blur-3xl"
-        style={{
-          background: 'radial-gradient(circle at 30% 30%, rgba(255,106,0,0.22), transparent 62%)',
-        }}
-      />
-      <svg className="absolute inset-0 h-full w-full opacity-35" viewBox="0 0 1200 420" preserveAspectRatio="none">
-        <path
-          d="M0 300 C 120 260, 240 320, 360 280 S 600 260, 720 240 S 960 220, 1200 190"
-          fill="none"
-          stroke="hsl(var(--accent) / 0.9)"
-          strokeWidth="2.25"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          strokeDasharray="8 10"
+  // Graphic Design World: Artistic, Fluid, Vibrant, Texture
+  if (worldId === 'graphic-design') {
+    return (
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div className="absolute inset-0 bg-[#FFF9F0]" />
+
+        {/* Noise Texture */}
+        <div className="absolute inset-0 opacity-30 mix-blend-multiply"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opactiy='0.5'/%3E%3C/svg%3E")` }}
         />
-        <path
-          d="M0 320 C 150 280, 300 340, 450 300 S 700 270, 900 250 S 1080 230, 1200 210"
-          fill="none"
-          stroke="hsl(var(--primary) / 0.9)"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-          strokeLinecap="round"
+
+        {/* Floating Shapes */}
+        <div className="absolute inset-0 opacity-20">
+          {/* Triangles, Circles, Squiggles */}
+          <motion.div
+            className="absolute top-[20%] right-[15%] w-0 h-0 border-l-[30px] border-l-transparent border-t-[50px] border-t-[#FF4D5A] border-r-[30px] border-r-transparent mix-blend-multiply"
+            animate={{ rotate: 360, y: [0, -20, 0] }}
+            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+          />
+          <motion.div
+            className="absolute bottom-[30%] left-[10%] w-16 h-16 rounded-full border-4 border-[#2A4BFF] mix-blend-multiply"
+            animate={{ scale: [1, 1.2, 1], x: [0, 20, 0] }}
+            transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          {/* SVG Squiggle */}
+          <motion.svg
+            viewBox="0 0 100 20"
+            className="absolute top-[40%] left-[30%] w-32 stroke-[#B8FF2C] fill-none stroke-[4px]"
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 10, repeat: Infinity }}
+          >
+            <path d="M0,10 Q25,0 50,10 T100,10" />
+          </motion.svg>
+        </div>
+
+        {/* Animated Blobs */}
+        <motion.div
+          animate={{
+            translate: ['0% 0%', '10% 10%', '-5% 5%', '0% 0%'],
+            scale: [1, 1.1, 0.9, 1]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#FF4D5A]/20 blur-[80px] mix-blend-multiply"
         />
-      </svg>
-    </div>
-  );
+
+        <motion.div
+          animate={{
+            translate: ['0% 0%', '-10% 15%', '5% -5%', '0% 0%'],
+            scale: [1, 1.2, 0.9, 1]
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute bottom-[-10%] left-[-10%] w-[700px] h-[700px] rounded-full bg-[#2A4BFF]/15 blur-[100px] mix-blend-multiply"
+        />
+
+        <motion.div
+          animate={{
+            translate: ['0% 0%', '15% -10%', '-10% -5%', '0% 0%'],
+            scale: [1, 0.8, 1.1, 1]
+          }}
+          transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[30%] left-[30%] w-[400px] h-[400px] rounded-full bg-[#B8FF2C]/30 blur-[60px] mix-blend-multiply"
+        />
+
+        {/* Subtle geometric overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(45deg, #000 0, #000 1px, transparent 0, transparent 50%)',
+            backgroundSize: '20px 20px'
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Trading World: Professional, Data-driven, Sleek, Chart-like
+  if (worldId === 'trading') {
+    return (
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div className="absolute inset-0 bg-[#0B0F14]" />
+
+        {/* Financial Grid */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `linear-gradient(#2A3241 1px, transparent 1px), linear-gradient(90deg, #2A3241 1px, transparent 1px)`,
+            backgroundSize: '50px 50px'
+          }}
+        />
+
+        {/* Candlestick Chart Simulation */}
+        <div className="absolute bottom-0 left-0 right-0 h-64 flex items-end justify-around opacity-20 px-10">
+          {[...Array(20)].map((_, i) => {
+            const height = Math.random() * 80 + 20; // 20% to 100%
+            const isGreen = Math.random() > 0.5;
+            const color = isGreen ? '#4ADE80' : '#EF4444';
+
+            return (
+              <motion.div
+                key={i}
+                className="w-2 md:w-4 relative"
+                initial={{ height: '0%' }}
+                animate={{ height: [`0%`, `${height}%`] }}
+                transition={{ duration: 1.5, delay: i * 0.1, ease: 'easeOut' }}
+                style={{ backgroundColor: color }}
+              >
+                {/* Wick */}
+                <div className="absolute left-1/2 -translate-x-1/2 -top-4 w-[1px] h-[calc(100%+20px)] bg-white/50" />
+              </motion.div>
+            )
+          })}
+        </div>
+
+        {/* Floating Currency Symbols */}
+        {[...Array(8)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute text-white/5 font-bold text-4xl"
+            initial={{ y: '110%', opacity: 0 }}
+            animate={{ y: '-10%', opacity: [0, 1, 0] }}
+            transition={{ duration: 15 + Math.random() * 10, repeat: Infinity, delay: Math.random() * 10, ease: 'linear' }}
+            style={{ left: `${Math.random() * 90}%` }}
+          >
+            {['$', '€', '£', '¥', 'BTC', 'ETH'][i % 6]}
+          </motion.div>
+        ))}
+
+        {/* Abstract Chart Line */}
+        <svg className="absolute inset-0 w-full h-full opacity-30" preserveAspectRatio="none">
+          <motion.path
+            d="M0,350 Q200,300 400,380 T800,250 T1200,100"
+            fill="none"
+            stroke="#FF6A00"
+            strokeWidth="3"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 3, ease: "easeInOut" }}
+          />
+          <motion.path
+            d="M0,400 Q300,350 500,420 T1000,300 T1400,150"
+            fill="none"
+            stroke="#4ADE80"
+            strokeWidth="2"
+            opacity="0.5"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 4, ease: "easeInOut", delay: 1 }}
+          />
+        </svg>
+
+        {/* Glowing Ticker Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F14] via-transparent to-[#0B0F14]/80" />
+
+        {/* Dynamic Glows */}
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-[#FF6A00]/10 rounded-full blur-[120px]" />
+        <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-[#10B981]/10 rounded-full blur-[120px]" />
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function WorldPortalCard({
@@ -451,7 +608,7 @@ function WorldPortalCard({
   if (!world.portal) return null;
 
   const labelPrimary = isRTL ? world.copy.label.ar : world.copy.label.en;
-  const labelSecondary = isRTL ? world.copy.label.en : world.copy.label.ar;
+  const labelSecondary = isRTL ? null : world.copy.label.ar;
 
   const headlinePrimary = isRTL ? world.copy.headline.ar : world.copy.headline.en;
   const headlineSecondary = isRTL ? world.copy.headline.en : world.copy.headline.ar;
@@ -467,131 +624,136 @@ function WorldPortalCard({
       : null;
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
+      whileHover={{ scale: 1.02, y: -4 }}
+      whileTap={{ scale: 0.98 }}
       className={cn(
-        'group relative overflow-hidden rounded-2xl border transition-all duration-300',
+        'group relative overflow-hidden rounded-2xl border transition-all duration-500',
         isRTL ? 'text-right' : 'text-left',
-        variant === 'hub' ? 'p-5 sm:p-6 md:p-7' : 'p-4 sm:p-5',
+        variant === 'hub' ? 'p-6 sm:p-7 md:p-8 h-full flex flex-col' : 'p-4 sm:p-5',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-        active ? 'border-primary/55 shadow-lg' : 'border-border/55 hover:border-border/80 hover:-translate-y-0.5',
+        active ? 'border-primary/80 shadow-2xl' : 'border-border/40 hover:border-border/80',
       )}
-      style={{ backgroundColor: world.portal.bg, color: world.portal.fg }}
+      style={{
+        backgroundColor: active ? `${world.portal.bg}DD` : `${world.portal.bg}BB`,
+        color: world.portal.fg,
+        boxShadow: active ? `0 20px 40px -10px ${world.portal.accent}33` : undefined,
+        borderColor: active ? world.portal.accent : undefined
+      }}
     >
+      {/* Dynamic Background Sheen */}
       <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
         style={{
-          background: `radial-gradient(circle at 20% 15%, ${world.portal.accent}55, transparent 55%), radial-gradient(circle at 80% 75%, ${world.portal.accent}22, transparent 55%)`,
+          background: `radial-gradient(circle at 50% 0%, ${world.portal.accent}22, transparent 70%)`,
         }}
       />
+
+      {/* Textured overlay */}
       <div
-        className={cn('absolute inset-0 opacity-30', world.id === 'programming' && 'mix-blend-screen')}
+        className={cn('absolute inset-0 opacity-20 transition-opacity duration-500', active ? 'opacity-40' : '')}
         style={{
           backgroundImage:
             world.id === 'graphic-design'
-              ? 'repeating-linear-gradient(45deg, rgba(16,16,16,0.06) 0px, rgba(16,16,16,0.06) 1px, transparent 1px, transparent 10px)'
-              : 'linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)',
-          backgroundSize: world.id === 'graphic-design' ? 'auto' : '22px 22px',
+              ? 'repeating-linear-gradient(45deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 8px)'
+              : 'linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)',
+          backgroundSize: world.id === 'graphic-design' ? 'auto' : '20px 20px',
         }}
       />
 
-      <div className="relative flex items-start gap-3">
+      <div className="relative flex items-start gap-4 mb-auto">
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-xl"
+          className="flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-300 group-hover:scale-110 shadow-lg"
           style={{
-            backgroundColor: world.id === 'graphic-design' ? 'rgba(16,16,16,0.08)' : 'rgba(255,255,255,0.10)',
-            boxShadow: active ? `0 0 0 1px ${world.portal.accent}66` : undefined,
+            backgroundColor: world.id === 'graphic-design' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.10)',
+            boxShadow: `0 0 20px -5px ${world.portal.accent}44`,
+            color: world.portal.accent
           }}
         >
-          <world.Icon className="h-5 w-5" style={{ color: world.portal.accent }} />
+          <world.Icon className="h-6 w-6" />
         </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2">
+        <div className="min-w-0 flex-1 pt-1">
+          <div className="flex flex-col">
             <div
-              className={cn('text-sm font-semibold', isRTL ? world.typography.ar : world.typography.en)}
+              className={cn('text-base font-bold tracking-tight', isRTL ? world.typography.ar : world.typography.en)}
               dir={isRTL ? 'rtl' : 'ltr'}
             >
               {labelPrimary}
             </div>
-            <div
-              className={cn('text-xs opacity-80', isArabicText(labelSecondary) ? 'font-ar' : world.typography.en)}
-              dir={isRTL ? 'ltr' : 'rtl'}
-            >
-              {labelSecondary}
-            </div>
+            {labelSecondary && (
+              <div
+                className={cn('text-xs opacity-60 font-medium uppercase tracking-wider', isArabicText(labelSecondary) ? 'font-ar' : world.typography.en)}
+                dir={isRTL ? 'ltr' : 'rtl'}
+              >
+                {labelSecondary}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {variant === 'hub' ? (
-        <div className="relative mt-5">
-          <div
-            className={cn(
-              'text-xl sm:text-2xl font-extrabold leading-tight',
-              isRTL ? world.typography.ar : world.typography.en,
-            )}
-            dir={isRTL ? 'rtl' : 'ltr'}
-          >
-            {headlinePrimary}
-          </div>
-          <div
-            className={cn(
-              'mt-2 text-sm sm:text-base font-semibold opacity-90',
-              isArabicText(headlineSecondary) ? 'font-ar' : world.typography.en,
-            )}
-            dir={isRTL ? 'ltr' : 'rtl'}
-          >
-            {headlineSecondary}
-          </div>
-
-          <div className="mt-6 flex items-end justify-between gap-4">
-            <div className="flex flex-col gap-1">
-              {countPrimary ? (
-                <div className={cn('text-xs opacity-85', isRTL ? 'font-ar' : 'font-mono')}>{countPrimary}</div>
-              ) : null}
-              <div className="text-sm font-semibold" dir={isRTL ? 'rtl' : 'ltr'}>
-                {ctaPrimary}
-              </div>
-              <div
-                className={cn('text-xs opacity-85', isArabicText(ctaSecondary) ? 'font-ar' : 'font-sans')}
-                dir={isRTL ? 'ltr' : 'rtl'}
-              >
-                {ctaSecondary}
-              </div>
-            </div>
-
+        <div className="relative mt-8 space-y-4">
+          <div>
             <div
               className={cn(
-                'h-10 w-10 rounded-xl flex items-center justify-center transition-transform duration-300',
-                world.id === 'graphic-design' ? 'bg-black/5' : 'bg-white/10',
-                'group-hover:scale-105',
+                'text-2xl sm:text-3xl font-black leading-none mb-2',
+                isRTL ? world.typography.ar : world.typography.en,
               )}
-              style={{ boxShadow: `0 0 0 1px ${world.portal.accent}44` }}
+              dir={isRTL ? 'rtl' : 'ltr'}
             >
-              <ArrowRight
-                className={cn('h-5 w-5', isRTL ? 'rotate-180' : '')}
-                style={{ color: world.portal.accent }}
-              />
+              {headlinePrimary}
+            </div>
+            <div
+              className={cn(
+                'text-sm sm:text-base font-semibold opacity-70 leading-relaxed line-clamp-2',
+                isArabicText(headlineSecondary) ? 'font-ar' : world.typography.en,
+              )}
+              dir={isRTL ? 'ltr' : 'rtl'}
+            >
+              {headlineSecondary}
+            </div>
+          </div>
+
+          <div className="pt-4 flex items-end justify-between border-t border-white/5">
+            <div className="flex flex-col gap-0.5">
+              {countPrimary ? (
+                <div className={cn('text-xs font-mono opacity-50 mb-1', isRTL ? 'font-ar' : 'font-mono')}>{countPrimary}</div>
+              ) : null}
+              <div className="flex items-center gap-2 group-hover:gap-3 transition-all">
+                <div className="text-sm font-bold" dir={isRTL ? 'rtl' : 'ltr'}>
+                  {ctaPrimary}
+                </div>
+                <ArrowRight
+                  className={cn('h-4 w-4 transition-transform', isRTL ? 'rotate-180 group-hover:-translate-x-1' : 'group-hover:translate-x-1')}
+                  style={{ color: world.portal.accent }}
+                />
+              </div>
             </div>
           </div>
         </div>
       ) : active ? (
-        <div className="relative mt-4">
-          <div className="text-xs opacity-90">{isRTL ? world.copy.cta.ar : world.copy.cta.en}</div>
-          <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-white/10">
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="relative mt-4"
+        >
+          <div className="text-xs font-bold opacity-90 tracking-wide uppercase">{isRTL ? world.copy.cta.ar : world.copy.cta.en}</div>
+          <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-black/20">
             <motion.div
-              className="h-full w-1/2 rounded-full"
-              style={{ backgroundColor: world.portal.accent }}
+              className="h-full w-1/2 rounded-full box-shadow-glow"
+              style={{ backgroundColor: world.portal.accent, boxShadow: `0 0 10px ${world.portal.accent}` }}
               initial={{ x: isRTL ? '100%' : '-100%' }}
               animate={{ x: isRTL ? ['100%', '-20%'] : ['-100%', '20%'] }}
-              transition={{ duration: 1.2, ease: 'easeOut' }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
             />
           </div>
-        </div>
+        </motion.div>
       ) : null}
-    </button>
+    </motion.button>
   );
 }
 
@@ -734,10 +896,10 @@ function CoursesContent() {
   };
 
   const secondary = {
-    headline: isRTL ? activeWorld.copy.headline.en : activeWorld.copy.headline.ar,
-    subline: isRTL ? activeWorld.copy.subline.en : activeWorld.copy.subline.ar,
-    cta: isRTL ? activeWorld.copy.cta.en : activeWorld.copy.cta.ar,
-    concept: isRTL ? activeWorld.copy.concept.en : activeWorld.copy.concept.ar,
+    headline: isRTL ? null : activeWorld.copy.headline.ar,
+    subline: isRTL ? null : activeWorld.copy.subline.ar,
+    cta: isRTL ? null : activeWorld.copy.cta.ar,
+    concept: isRTL ? null : activeWorld.copy.concept.ar,
   };
 
   return (
@@ -797,23 +959,27 @@ function CoursesContent() {
                       <span className="block" dir={isRTL ? 'rtl' : 'ltr'}>
                         {primary.headline}
                       </span>
-                      <span
-                        className={cn(
-                          'mt-4 block text-lg md:text-xl font-semibold text-muted-foreground',
-                          isArabicText(secondary.headline) ? 'font-ar' : activeWorld.typography.en,
-                        )}
-                        dir={isRTL ? 'ltr' : 'rtl'}
-                      >
-                        {secondary.headline}
-                      </span>
+                      {secondary.headline && (
+                        <span
+                          className={cn(
+                            'mt-4 block text-lg md:text-xl font-semibold text-muted-foreground',
+                            isArabicText(secondary.headline) ? 'font-ar' : activeWorld.typography.en,
+                          )}
+                          dir={isRTL ? 'ltr' : 'rtl'}
+                        >
+                          {secondary.headline}
+                        </span>
+                      )}
                     </h1>
 
                     <p className={cn('mt-6 text-sm md:text-base text-muted-foreground max-w-xl', isRTL ? 'font-ar' : 'font-sans')} dir={isRTL ? 'rtl' : 'ltr'}>
                       {primary.subline}
                     </p>
-                    <p className={cn('mt-2 text-sm md:text-base text-muted-foreground/90 max-w-xl', isArabicText(secondary.subline) ? 'font-ar' : 'font-sans')} dir={isRTL ? 'ltr' : 'rtl'}>
-                      {secondary.subline}
-                    </p>
+                    {secondary.subline && (
+                      <p className={cn('mt-2 text-sm md:text-base text-muted-foreground/90 max-w-xl', isArabicText(secondary.subline) ? 'font-ar' : 'font-sans')} dir={isRTL ? 'ltr' : 'rtl'}>
+                        {secondary.subline}
+                      </p>
+                    )}
 
                     <div className="mt-8 flex">
                       <Button
@@ -825,9 +991,11 @@ function CoursesContent() {
                           <span className={cn('text-base font-semibold', isRTL ? 'font-ar' : 'font-sans')} dir={isRTL ? 'rtl' : 'ltr'}>
                             {primary.cta}
                           </span>
-                          <span className={cn('text-xs font-medium opacity-85', isArabicText(secondary.cta) ? 'font-ar' : 'font-sans')} dir={isRTL ? 'ltr' : 'rtl'}>
-                            {secondary.cta}
-                          </span>
+                          {secondary.cta && (
+                            <span className={cn('text-xs font-medium opacity-85', isArabicText(secondary.cta) ? 'font-ar' : 'font-sans')} dir={isRTL ? 'ltr' : 'rtl'}>
+                              {secondary.cta}
+                            </span>
+                          )}
                         </span>
                         <ArrowRight className={cn('h-5 w-5 opacity-90', isRTL ? 'rotate-180' : '')} />
                       </Button>
@@ -870,23 +1038,27 @@ function CoursesContent() {
                         <span className="block" dir={isRTL ? 'rtl' : 'ltr'}>
                           {primary.headline}
                         </span>
-                        <span
-                          className={cn(
-                            'mt-4 block text-lg md:text-xl font-semibold text-muted-foreground',
-                            isArabicText(secondary.headline) ? 'font-ar' : activeWorld.typography.en,
-                          )}
-                          dir={isRTL ? 'ltr' : 'rtl'}
-                        >
-                          {secondary.headline}
-                        </span>
+                        {secondary.headline && (
+                          <span
+                            className={cn(
+                              'mt-4 block text-lg md:text-xl font-semibold text-muted-foreground',
+                              isArabicText(secondary.headline) ? 'font-ar' : activeWorld.typography.en,
+                            )}
+                            dir={isRTL ? 'ltr' : 'rtl'}
+                          >
+                            {secondary.headline}
+                          </span>
+                        )}
                       </h1>
 
                       <p className={cn('mt-6 text-sm md:text-base text-muted-foreground max-w-xl', isRTL ? 'font-ar' : 'font-sans')} dir={isRTL ? 'rtl' : 'ltr'}>
                         {primary.subline}
                       </p>
-                      <p className={cn('mt-2 text-sm md:text-base text-muted-foreground/90 max-w-xl', isArabicText(secondary.subline) ? 'font-ar' : 'font-sans')} dir={isRTL ? 'ltr' : 'rtl'}>
-                        {secondary.subline}
-                      </p>
+                      {secondary.subline && (
+                        <p className={cn('mt-2 text-sm md:text-base text-muted-foreground/90 max-w-xl', isArabicText(secondary.subline) ? 'font-ar' : 'font-sans')} dir={isRTL ? 'ltr' : 'rtl'}>
+                          {secondary.subline}
+                        </p>
+                      )}
 
                       <div className="mt-8 flex flex-col sm:flex-row gap-3">
                         <Button
@@ -898,9 +1070,11 @@ function CoursesContent() {
                             <span className={cn('text-base font-semibold', isRTL ? 'font-ar' : 'font-sans')} dir={isRTL ? 'rtl' : 'ltr'}>
                               {primary.cta}
                             </span>
-                            <span className={cn('text-xs font-medium opacity-85', isArabicText(secondary.cta) ? 'font-ar' : 'font-sans')} dir={isRTL ? 'ltr' : 'rtl'}>
-                              {secondary.cta}
-                            </span>
+                            {secondary.cta && (
+                              <span className={cn('text-xs font-medium opacity-85', isArabicText(secondary.cta) ? 'font-ar' : 'font-sans')} dir={isRTL ? 'ltr' : 'rtl'}>
+                                {secondary.cta}
+                              </span>
+                            )}
                           </span>
                           <ArrowRight className={cn('h-5 w-5 opacity-90', isRTL ? 'rotate-180' : '')} />
                         </Button>
@@ -945,39 +1119,39 @@ function CoursesContent() {
       </section>
 
       {selectedWorld === 'hub' ? null : (
-      <section ref={gridRef} className="container py-12">
-        <div className="flex items-baseline justify-between gap-6 mb-8">
-          <h2 className={cn('text-xl md:text-2xl font-bold', isRTL ? activeWorld.typography.ar : activeWorld.typography.en)}>
-            {isRTL ? activeWorld.copy.sectionTitle.ar : activeWorld.copy.sectionTitle.en}
-          </h2>
-          <div className="text-sm text-muted-foreground">
-            {isRTL ? activeWorld.copy.label.ar : activeWorld.copy.label.en}
+        <section ref={gridRef} className="container py-12">
+          <div className="flex items-baseline justify-between gap-6 mb-8">
+            <h2 className={cn('text-xl md:text-2xl font-bold', isRTL ? activeWorld.typography.ar : activeWorld.typography.en)}>
+              {isRTL ? activeWorld.copy.sectionTitle.ar : activeWorld.copy.sectionTitle.en}
+            </h2>
+            <div className="text-sm text-muted-foreground">
+              {isRTL ? activeWorld.copy.label.ar : activeWorld.copy.label.en}
+            </div>
           </div>
-        </div>
 
-        {error ? (
-          <div className="text-center py-20">
-            <p className="text-lg text-destructive">{error}</p>
-            <p className="text-sm text-muted-foreground">{t('error')}</p>
-          </div>
-        ) : isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredCourses.map((course, index) => (
-              <CourseCard key={course.id} course={course} index={index} />
-            ))}
-          </motion.div>
-        )}
+          {error ? (
+            <div className="text-center py-20">
+              <p className="text-lg text-destructive">{error}</p>
+              <p className="text-sm text-muted-foreground">{t('error')}</p>
+            </div>
+          ) : isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredCourses.map((course, index) => (
+                <CourseCard key={course.id} course={course} index={index} />
+              ))}
+            </motion.div>
+          )}
 
-        {!isLoading && !error && filteredCourses.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-lg text-muted-foreground">{isRTL ? activeWorld.copy.empty.ar : activeWorld.copy.empty.en}</p>
-          </div>
-        )}
-      </section>
+          {!isLoading && !error && filteredCourses.length === 0 && (
+            <div className="text-center py-20">
+              <p className="text-lg text-muted-foreground">{isRTL ? activeWorld.copy.empty.ar : activeWorld.copy.empty.en}</p>
+            </div>
+          )}
+        </section>
       )}
     </div>
   );

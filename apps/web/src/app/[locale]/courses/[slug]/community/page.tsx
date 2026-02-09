@@ -16,13 +16,10 @@ import { communityApi, CommunityChannel, CommunityMessage } from '@/lib/api/comm
 import { createCommunitySocket } from '@/lib/realtime/community-socket';
 import { useAuth } from '@/contexts/auth-context';
 
-const channelDescriptions: Record<string, string> = {
-  ANNOUNCEMENTS: 'Instructor updates, milestones, and course-wide notes.',
-  QA: 'Ask questions and get answers from instructors and peers.',
-  DISCUSSION: 'Open discussion and peer learning space.',
-};
+import { useTranslations } from 'next-intl';
 
 export default function CourseCommunityPage() {
+  const t = useTranslations('community');
   const params = useParams();
   const slug = params?.slug as string;
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -65,7 +62,7 @@ export default function CourseCommunityPage() {
         const data = await communityApi.getCourseBySlug(slug);
         setCourse(data);
       } catch (error) {
-        setPageError(error instanceof Error ? error.message : 'Failed to load course.');
+        setPageError(error instanceof Error ? error.message : t('unavailable_title'));
       }
     };
 
@@ -80,7 +77,7 @@ export default function CourseCommunityPage() {
         setChannels(data);
         setActiveChannel(data[0] || null);
       } catch (error) {
-        setPageError(error instanceof Error ? error.message : 'Failed to load channels.');
+        setPageError(error instanceof Error ? error.message : t('no_channels'));
       }
     };
 
@@ -199,6 +196,7 @@ export default function CourseCommunityPage() {
       status: 'ACTIVE',
       isPinned: false,
       isAnswer: false,
+      isLocked: false,
       parentId: null,
       clientId,
       createdAt: new Date().toISOString(),
@@ -251,6 +249,7 @@ export default function CourseCommunityPage() {
       status: 'ACTIVE',
       isPinned: false,
       isAnswer: false,
+      isLocked: false,
       parentId: threadParent.id,
       clientId,
       createdAt: new Date().toISOString(),
@@ -334,10 +333,10 @@ export default function CourseCommunityPage() {
   );
   const threadComposerDisabled = isChannelLocked || isThreadLocked;
   const threadHelper = isThreadLocked
-    ? 'This thread is locked.'
+    ? t('locked_channel_helper')
     : isChannelLocked
-    ? 'This channel is locked.'
-    : undefined;
+      ? t('locked_channel_helper')
+      : undefined;
 
   if (isAuthLoading) {
     return (
@@ -352,12 +351,12 @@ export default function CourseCommunityPage() {
       <div className="container py-16">
         <Card>
           <CardHeader>
-            <CardTitle>Sign in required</CardTitle>
-            <CardDescription>You need an account to access this community.</CardDescription>
+            <CardTitle>{t('sign_in_title')}</CardTitle>
+            <CardDescription>{t('sign_in_desc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link href="/login">Log In</Link>
+              <Link href="/login">{t('login_button')}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -370,7 +369,7 @@ export default function CourseCommunityPage() {
       <div className="container py-16">
         <Card>
           <CardHeader>
-            <CardTitle>Community unavailable</CardTitle>
+            <CardTitle>{t('unavailable_title')}</CardTitle>
             <CardDescription>{pageError}</CardDescription>
           </CardHeader>
         </Card>
@@ -391,7 +390,7 @@ export default function CourseCommunityPage() {
     <div className="container py-10 space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Course Community</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
           <p className="text-muted-foreground">{course?.title}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -406,11 +405,11 @@ export default function CourseCommunityPage() {
         <aside className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-semibold">Channels</CardTitle>
+              <CardTitle className="text-sm font-semibold">{t('channels')}</CardTitle>
             </CardHeader>
             <CardContent>
               {channels.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No channels available.</p>
+                <p className="text-sm text-muted-foreground">{t('no_channels')}</p>
               ) : (
                 <ChannelList
                   channels={channels}
@@ -423,12 +422,12 @@ export default function CourseCommunityPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-semibold">Guidelines</CardTitle>
+              <CardTitle className="text-sm font-semibold">{t('guidelines_title')}</CardTitle>
             </CardHeader>
             <CardContent className="text-xs text-muted-foreground space-y-2">
-              <p>Stay on topic and be respectful.</p>
-              <p>Search before asking to reduce duplicates.</p>
-              <p>Instructors may pin or highlight key answers.</p>
+              <p>{t('guideline_1')}</p>
+              <p>{t('guideline_2')}</p>
+              <p>{t('guideline_3')}</p>
             </CardContent>
           </Card>
         </aside>
@@ -437,13 +436,13 @@ export default function CourseCommunityPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">{activeChannel?.name || 'Channel'}</CardTitle>
-              <CardDescription>{channelDescriptions[channelType]}</CardDescription>
+              <CardDescription>{t(`channel_descriptions.${channelType.toLowerCase()}`)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {pinnedMessages.length > 0 && (
                 <div className="space-y-4">
                   <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Pinned
+                    {t('pinned')}
                   </div>
                   {pinnedMessages.map((message, index) => (
                     <MessageItem
@@ -499,7 +498,7 @@ export default function CourseCommunityPage() {
 
               {nextCursor && (
                 <Button variant="outline" className="w-full" onClick={() => loadMessages(activeChannel!.id, nextCursor)}>
-                  Load older messages
+                  {t('load_older')}
                 </Button>
               )}
             </CardContent>
@@ -509,25 +508,25 @@ export default function CourseCommunityPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">
-                  {activeChannel?.type === 'QA' ? 'Ask a question' : 'Start a discussion'}
+                  {activeChannel?.type === 'QA' ? t('ask_question_title') : t('start_discussion_title')}
                 </CardTitle>
                 <CardDescription>
                   {activeChannel?.type === 'QA'
-                    ? 'Be specific so others can help quickly.'
-                    : 'Share progress, insights, or helpful resources.'}
+                    ? t('ask_question_desc')
+                    : t('start_discussion_desc')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <MessageComposer
                   placeholder={
                     activeChannel?.type === 'ANNOUNCEMENTS'
-                      ? 'Post an announcement...'
+                      ? t('post_announcement_placeholder')
                       : activeChannel?.type === 'QA'
-                      ? 'Ask your question...'
-                      : 'Share something with the community...'
+                        ? t('ask_question_placeholder')
+                        : t('share_placeholder')
                   }
                   onSend={sendMessage}
-                  helper={isChannelLocked ? 'This channel is locked.' : 'Be kind, concise, and clear.'}
+                  helper={isChannelLocked ? t('locked_channel_helper') : t('composer_helper')}
                   disabled={isChannelLocked}
                 />
               </CardContent>
@@ -559,11 +558,11 @@ export default function CourseCommunityPage() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-semibold">Thread view</CardTitle>
+                <CardTitle className="text-sm font-semibold">{t('thread_view_title')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Select a message to view replies and keep discussions organized.
+                  {t('thread_view_desc')}
                 </p>
               </CardContent>
             </Card>
@@ -602,7 +601,7 @@ function mergeMessage(
   list: CommunityMessageWithDelivery[],
   message: CommunityMessage,
   clientId?: string,
-) {
+): CommunityMessageWithDelivery[] {
   if (clientId) {
     const existingIndex = list.findIndex((item) => item.clientId === clientId);
     if (existingIndex !== -1) {
@@ -621,16 +620,15 @@ function replaceMessage(
   list: CommunityMessageWithDelivery[],
   clientId: string,
   message: CommunityMessage,
-) {
-  const next = list.map((item) =>
-    item.clientId === clientId ? { ...message, deliveryStatus: undefined } : item,
+): CommunityMessageWithDelivery[] {
+  return list.map((item) =>
+    item.clientId === clientId ? ({ ...message, deliveryStatus: undefined } as CommunityMessageWithDelivery) : item,
   );
-  return next;
 }
 
-function markFailed(list: CommunityMessageWithDelivery[], clientId: string) {
+function markFailed(list: CommunityMessageWithDelivery[], clientId: string): CommunityMessageWithDelivery[] {
   return list.map((item) =>
-    item.clientId === clientId ? { ...item, deliveryStatus: 'failed' } : item,
+    item.clientId === clientId ? { ...item, deliveryStatus: 'failed' as const } : item,
   );
 }
 

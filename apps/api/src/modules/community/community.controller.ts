@@ -30,6 +30,30 @@ export class CommunityController {
     private readonly communityGateway: CommunityGateway,
   ) {}
 
+  @Get('admin/reported-messages')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get all reported messages (admin only)' })
+  @ApiResponse({ status: 200, description: 'Returns reported messages' })
+  async getReportedMessages() {
+    return this.communityService.getReportedMessages();
+  }
+
+  @Get('admin/pinned-messages')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get all pinned messages (admin only)' })
+  @ApiResponse({ status: 200, description: 'Returns pinned messages' })
+  async getPinnedMessages() {
+    return this.communityService.getPinnedMessages();
+  }
+
+  @Get('admin/locked-threads')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get all locked threads (admin only)' })
+  @ApiResponse({ status: 200, description: 'Returns locked threads' })
+  async getLockedThreads() {
+    return this.communityService.getLockedThreads();
+  }
+
   @Get('courses/:courseId/channels')
   @Roles(Role.STUDENT, Role.INSTRUCTOR, Role.ADMIN, Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'List community channels for a course' })

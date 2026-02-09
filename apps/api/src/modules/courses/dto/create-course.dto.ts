@@ -5,10 +5,12 @@ import {
   IsEnum,
   IsBoolean,
   IsNumber,
+  IsInt,
   MinLength,
   MaxLength,
   Min,
   IsArray,
+  Matches,
 } from 'class-validator';
 import { CourseLevel, PricingModel } from '@prisma/client';
 
@@ -29,16 +31,21 @@ export class CreateCourseDto {
   @IsOptional()
   @IsString()
   @MaxLength(200)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+    message: 'Slug must contain only lowercase letters, numbers, and hyphens',
+  })
   slug?: string;
 
   @ApiPropertyOptional({ example: 'https://example.com/cover.jpg' })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   coverImageUrl?: string;
 
   @ApiPropertyOptional({ example: 'en', default: 'en' })
   @IsOptional()
   @IsString()
+  @MaxLength(10)
   language?: string;
 
   @ApiPropertyOptional({ enum: CourseLevel, default: CourseLevel.BEGINNER })
@@ -51,15 +58,16 @@ export class CreateCourseDto {
   @IsEnum(PricingModel)
   pricingModel?: PricingModel;
 
-  @ApiPropertyOptional({ example: 99.99 })
+  @ApiPropertyOptional({ example: 9999, description: 'Price in cents (9999 = $99.99)' })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(0)
   price?: number;
 
   @ApiPropertyOptional({ example: 'category-id' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   categoryId?: string;
 
   @ApiPropertyOptional({ example: ['instructor-id-1', 'instructor-id-2'] })

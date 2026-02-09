@@ -22,13 +22,21 @@ import { SkillTreesModule } from './modules/skill-trees/skill-trees.module';
 import { StreamingModule } from './modules/streaming/streaming.module';
 import { ChatbotModule } from './modules/chatbot/chatbot.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module';
+import { ConsentModule } from './modules/consent/consent.module';
+import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
+import { ResilienceModule } from './common/resilience/resilience.module';
+import { StorageModule } from './common/storage/storage.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { CsrfGuard } from './common/guards/csrf.guard';
 import { SubscriptionThrottleGuard } from './common/guards/subscription-throttle.guard';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { CacheInterceptor } from './common/interceptors/cache.interceptor';
+import { CommonModule } from './common/common.module';
+import { QueueModule } from './common/queue/queue.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -36,7 +44,8 @@ import configuration from './config/configuration';
     // Configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../../.env',
+      // Allow local overrides (e.g. local Docker Postgres) without changing committed `.env`.
+      envFilePath: ['../../.env.local', '../../.env'],
       load: [configuration],
     }),
 
@@ -50,6 +59,12 @@ import configuration from './config/configuration';
 
     // Database
     PrismaModule,
+
+    // Common services (AuditLogService, etc.)
+    CommonModule,
+
+    // Queue infrastructure for async operations
+    QueueModule,
 
     // Scheduling for cron jobs
     ScheduleModule.forRoot(),
@@ -81,6 +96,13 @@ import configuration from './config/configuration';
     StreamingModule,
     ChatbotModule,
     NotificationsModule,
+    MaintenanceModule,
+    ConsentModule,
+    AuditLogsModule,
+
+    // Infrastructure modules
+    ResilienceModule,
+    StorageModule,
 
     // Media & Content modules (provider-agnostic)
     VideoModule.forRoot(),
@@ -122,6 +144,11 @@ import configuration from './config/configuration';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    // Global CSRF protection (double-submit cookie)
+    {
+      provide: APP_GUARD,
+      useClass: CsrfGuard,
     },
   ],
 })

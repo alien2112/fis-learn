@@ -17,6 +17,9 @@ import { JwtPayload, TokenResponse, AuthUser } from './types/jwt-payload.interfa
 import { Role, UserStatus, TokenType } from '@prisma/client';
 import { EMAIL_SERVICE, EmailService, EmailTemplateType } from '../../common/external-services';
 import { MfaModuleService } from '../mfa/mfa.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { AuditLogService } from '@/common/services/audit-log.service';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -28,6 +31,8 @@ export class AuthService implements OnModuleInit {
     private configService: ConfigService,
     @Inject(EMAIL_SERVICE) private emailService: EmailService,
     private mfaService: MfaModuleService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private auditLog: AuditLogService,
   ) {}
 
   async onModuleInit() {
@@ -68,6 +73,50 @@ export class AuthService implements OnModuleInit {
       const stack = error instanceof Error ? error.stack : String(error);
       this.logger.error('Failed to seed dev admin account', stack);
     }
+  }
+
+  // Brute-force protection helpers
+  private async checkLoginAttempts(email: string): Promise<void> {
+    const key = `login_attempts:${email.toLowerCase()}`;
+    const attempts = (await this.cacheManager.get<number>(key)) || 0;
+    if (attempts >= 5) {
+      throw new UnauthorizedException(
+        'Too many failed login attempts. Please try again in 15 minutes.',
+      );
+    }
+  }
+
+  private async recordFailedLogin(email: string): Promise<void> {
+    const key = `login_attempts:${email.toLowerCase()}`;
+    const attempts = (await this.cacheManager.get<number>(key)) || 0;
+    await this.cacheManager.set(key, attempts + 1, 15 * 60 * 1000); // 15 min TTL
+  }
+
+  private async clearLoginAttempts(email: string): Promise<void> {
+    const key = `login_attempts:${email.toLowerCase()}`;
+    await this.cacheManager.del(key);
+  }
+
+  // MFA attempt limiting helpers
+  private async checkMfaAttempts(userId: string): Promise<void> {
+    const key = `mfa_attempts:${userId}`;
+    const attempts = (await this.cacheManager.get<number>(key)) || 0;
+    if (attempts >= 5) {
+      throw new UnauthorizedException(
+        'Too many failed MFA attempts. Please request a new login.',
+      );
+    }
+  }
+
+  private async recordFailedMfa(userId: string): Promise<void> {
+    const key = `mfa_attempts:${userId}`;
+    const attempts = (await this.cacheManager.get<number>(key)) || 0;
+    await this.cacheManager.set(key, attempts + 1, 5 * 60 * 1000); // 5 min TTL
+  }
+
+  private async clearMfaAttempts(userId: string): Promise<void> {
+    const key = `mfa_attempts:${userId}`;
+    await this.cacheManager.del(key);
   }
 
   async register(dto: RegisterDto): Promise<{ user: AuthUser; message: string }> {
@@ -135,31 +184,42 @@ export class AuthService implements OnModuleInit {
   async login(dto: LoginDto): Promise<{ user: AuthUser; tokens: TokenResponse } | { mfaRequired: true; mfaPendingToken: string }> {
     const normalizedEmail = dto.email.trim().toLowerCase();
 
+    // Check for brute-force protection
+    await this.checkLoginAttempts(normalizedEmail);
+
     const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
 
     if (!user) {
+      await this.recordFailedLogin(normalizedEmail);
       throw new UnauthorizedException('Invalid email or password');
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!isPasswordValid) {
+      await this.recordFailedLogin(normalizedEmail);
       throw new UnauthorizedException('Invalid email or password');
     }
 
     if (user.status === UserStatus.PENDING_VERIFICATION) {
+      await this.recordFailedLogin(normalizedEmail);
       throw new UnauthorizedException('Please verify your email before logging in');
     }
 
     if (user.status === UserStatus.SUSPENDED) {
+      await this.recordFailedLogin(normalizedEmail);
       throw new UnauthorizedException('Your account has been suspended');
     }
 
     if (user.status === UserStatus.BANNED) {
+      await this.recordFailedLogin(normalizedEmail);
       throw new UnauthorizedException('Your account has been banned');
     }
+
+    // Clear failed attempts on successful password validation
+    await this.clearLoginAttempts(normalizedEmail);
 
     // MFA gate — return short-lived pending token if MFA is enabled
     if (user.mfaEnabled) {
@@ -179,6 +239,9 @@ export class AuthService implements OnModuleInit {
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
+
+    // Log successful login
+    await this.auditLog.logAuth(user.id, 'LOGIN');
 
     return {
       user: {
@@ -339,6 +402,9 @@ export class AuthService implements OnModuleInit {
       where: { userId: verificationToken.userId },
     });
 
+    // Log password reset
+    await this.auditLog.logAuth(verificationToken.userId, 'PASSWORD_RESET');
+
     return { message: 'Password has been reset successfully. You can now log in.' };
   }
 
@@ -373,6 +439,9 @@ export class AuthService implements OnModuleInit {
       data: { usedAt: new Date() },
     });
 
+    // Log email verification
+    await this.auditLog.logAuth(verificationToken.userId, 'EMAIL_VERIFIED');
+
     return { message: 'Email verified successfully. You can now log in.' };
   }
 
@@ -390,10 +459,17 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException('Invalid MFA pending token');
     }
 
+    // Check MFA attempt limiting
+    await this.checkMfaAttempts(payload.sub);
+
     const isValid = await this.mfaService.verifyMfaCode(payload.sub, code);
     if (!isValid) {
+      await this.recordFailedMfa(payload.sub);
       throw new UnauthorizedException('Invalid MFA code');
     }
+
+    // Clear MFA attempts on success
+    await this.clearMfaAttempts(payload.sub);
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
@@ -409,6 +485,9 @@ export class AuthService implements OnModuleInit {
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
+
+    // Log successful MFA login
+    await this.auditLog.logAuth(user.id, 'LOGIN_MFA');
 
     return {
       user: {
@@ -456,6 +535,9 @@ export class AuthService implements OnModuleInit {
     await this.prisma.refreshToken.deleteMany({
       where: { userId },
     });
+
+    // Log password change
+    await this.auditLog.logAuth(userId, 'PASSWORD_CHANGE');
 
     return { message: 'Password changed successfully. Please log in again.' };
   }

@@ -285,54 +285,64 @@ export class AccessCodesService {
       throw new BadRequestException('Access code has reached maximum redemptions');
     }
 
-    // Process redemption based on type
-    if (accessCode.type === AccessCodeType.COURSE && accessCode.courseId) {
-      // Check if already enrolled
-      const existingEnrollment = await this.prisma.enrollment.findUnique({
-        where: {
-          userId_courseId: {
-            userId,
-            courseId: accessCode.courseId,
-          },
-        },
+    // Use interactive transaction for atomicity
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Re-fetch with lock to prevent race conditions
+      const lockedCode = await tx.accessCode.findUnique({
+        where: { id: accessCode.id },
       });
 
-      if (existingEnrollment) {
-        // Return generic message to prevent user enumeration attacks
-        throw new ConflictException('Registration failed. Please try again or contact support if the problem persists.');
+      if (!lockedCode) {
+        throw new BadRequestException('Access code not found');
       }
 
-      // Create enrollment
-      await this.prisma.enrollment.create({
+      if (lockedCode.currentRedemptions >= lockedCode.maxRedemptions) {
+        throw new BadRequestException('Access code has reached maximum redemptions');
+      }
+
+      // Process redemption based on type
+      if (lockedCode.type === AccessCodeType.COURSE && accessCode.courseId) {
+        const existingEnrollment = await tx.enrollment.findUnique({
+          where: {
+            userId_courseId: { userId, courseId: accessCode.courseId },
+          },
+        });
+
+        if (existingEnrollment) {
+          throw new ConflictException('You are already enrolled in this course');
+        }
+
+        await tx.enrollment.create({
+          data: {
+            userId,
+            courseId: accessCode.courseId,
+            paymentStatus: PaymentStatus.CODE_REDEEMED,
+          },
+        });
+      }
+
+      // Record usage and increment atomically
+      const usage = await tx.accessCodeUsage.create({
         data: {
+          codeId: lockedCode.id,
           userId,
-          courseId: accessCode.courseId,
-          paymentStatus: PaymentStatus.CODE_REDEEMED,
         },
       });
-    }
 
-    // Record usage and update redemption count
-    const [usage] = await this.prisma.$transaction([
-      this.prisma.accessCodeUsage.create({
-        data: {
-          codeId: accessCode.id,
-          userId,
-        },
-      }),
-      this.prisma.accessCode.update({
-        where: { id: accessCode.id },
+      const shouldExpire =
+        lockedCode.isSingleUse ||
+        lockedCode.currentRedemptions + 1 >= lockedCode.maxRedemptions;
+
+      await tx.accessCode.update({
+        where: { id: lockedCode.id },
         data: {
           currentRedemptions: { increment: 1 },
-          // Auto-expire single-use codes
-          status:
-            accessCode.isSingleUse ||
-            accessCode.currentRedemptions + 1 >= accessCode.maxRedemptions
-              ? AccessCodeStatus.EXPIRED
-              : AccessCodeStatus.ACTIVE,
+          status: shouldExpire ? AccessCodeStatus.EXPIRED : AccessCodeStatus.ACTIVE,
         },
-      }),
-    ]);
+      });
+
+      return usage;
+    });
 
     return {
       message: 'Code redeemed successfully',
@@ -409,12 +419,12 @@ export class AccessCodesService {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Format for CSV export
+    // Format for CSV export with sanitization to prevent CSV injection
     const csvData = codes.map((code) => ({
-      code: code.code,
-      type: code.type,
-      target: code.course?.title || code.material?.title || 'N/A',
-      status: code.status,
+      code: this.sanitizeCsvField(code.code),
+      type: this.sanitizeCsvField(code.type),
+      target: this.sanitizeCsvField(code.course?.title || code.material?.title || 'N/A'),
+      status: this.sanitizeCsvField(code.status),
       maxRedemptions: code.maxRedemptions,
       currentRedemptions: code.currentRedemptions,
       expiresAt: code.expiresAt?.toISOString() || 'Never',
@@ -503,5 +513,16 @@ export class AccessCodesService {
       code += chars.charAt(randomBytes[i] % chars.length);
     }
     return code;
+  }
+
+  private sanitizeCsvField(value: string | number): string | number {
+    // Convert to string if number
+    const str = String(value);
+    // Escape cells that start with formula characters to prevent CSV injection
+    // See: https://owasp.org/www-community/attacks/CSV_Injection
+    if (/^[\+\-\=\@\t\r\n]/.test(str)) {
+      return `'${str}`;
+    }
+    return value;
   }
 }

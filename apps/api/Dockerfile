@@ -32,11 +32,14 @@ COPY --from=deps /app/apps/api/prisma ./apps/api/prisma
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api ./apps/api
 
+# Install prisma explicitly for build stage
+RUN pnpm add -D prisma --filter api
+
 # Generate Prisma client
-RUN cd apps/api && npx prisma generate
+RUN pnpm --filter api exec prisma generate
 
 # Build the application
-RUN cd apps/api && npx nest build
+RUN pnpm --filter api exec nest build
 
 # Stage 3: Runner (Production)
 FROM node:20-alpine AS production
@@ -65,12 +68,9 @@ RUN pnpm install --frozen-lockfile --prod
 # Copy built application
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-COPY --from=builder /app/node_modules/.pnpm/@prisma+client* /app/node_modules/.pnpm/
-COPY --from=builder /app/node_modules/@prisma /app/node_modules/@prisma
-COPY --from=builder /app/node_modules/.prisma /app/node_modules/.prisma
 
-# Generate Prisma client
-RUN cd apps/api && npx prisma generate
+# Generate Prisma client using locally installed version
+RUN pnpm --filter api exec prisma generate
 
 # Change ownership to non-root user
 RUN chown -R nodejs:nodejs /app
@@ -81,7 +81,7 @@ EXPOSE 3011
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3011/api/health/live', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"
+  CMD node -e "require('http').get('http://localhost:3011/api/v1/health/live', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"
 
 # Start the application
 CMD ["node", "apps/api/dist/main.js"]

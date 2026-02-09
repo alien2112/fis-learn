@@ -7,15 +7,15 @@ export default () => ({
     url: process.env.REDIS_URL || 'redis://localhost:6379',
   },
   jwt: {
-    secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key',
+    secret: process.env.JWT_SECRET,
+    refreshSecret: process.env.JWT_REFRESH_SECRET,
     expiry: process.env.JWT_EXPIRY || '15m',
     refreshExpiry: process.env.JWT_REFRESH_EXPIRY || '7d',
   },
   urls: {
-    api: process.env.API_URL || 'http://localhost:3001',
-    admin: process.env.ADMIN_URL || 'http://localhost:3000',
-    web: process.env.WEB_URL || 'http://localhost:3002',
+    api: process.env.API_URL || 'http://localhost:3011',
+    admin: process.env.ADMIN_URL || 'http://localhost:3004',
+    web: process.env.WEB_URL || 'http://localhost:3010',
   },
   upload: {
     dir: process.env.UPLOAD_DIR || './uploads',

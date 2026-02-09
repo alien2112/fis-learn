@@ -6,7 +6,7 @@ import { createNotificationSocket } from '@/lib/realtime/notification-socket';
 import { NotificationCenter } from './NotificationCenter';
 import { Socket } from 'socket.io-client';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api/v1';
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -15,7 +15,7 @@ export function NotificationBell() {
 
   useEffect(() => {
     // Fetch initial unread count
-    fetch(`${API_URL}/api/v1/notifications/unread-count`, {
+    fetch(`${API_URL}/notifications/unread-count`, {
       credentials: 'include',
     })
       .then((res) => res.json())

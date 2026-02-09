@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AnalyticsEventType, Prisma } from '@prisma/client';
 import { TrackEventDto } from './dto/track-event.dto';
+import { ProgressService } from '@/modules/courses/progress.service';
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private progressService: ProgressService,
+  ) {}
 
   // Batch insert events and update progress in real-time
   async trackEvents(events: TrackEventDto[], studentId: string, deviceInfo: any) {
@@ -18,7 +22,7 @@ export class AnalyticsService {
       lessonId: e.lessonId,
       eventType: e.eventType as AnalyticsEventType,
       eventTimestamp: new Date(e.timestamp),
-      sessionId: e.sessionId,
+      sessionId: `${studentId}:${e.sessionId}`,
       eventData: e.payload || {},
       deviceType: deviceInfo.deviceType,
       browser: deviceInfo.browser,
@@ -62,6 +66,7 @@ export class AnalyticsService {
         break;
       case 'LESSON_START':
       case 'VIDEO_PLAY':
+      case 'LIVE_CLASS_ATTENDED':
         await this.updateLastActivity(studentId, event.courseId, now);
         break;
     }
@@ -136,6 +141,8 @@ export class AnalyticsService {
   ) {
     if (!event.courseId || !event.lessonId || !event.payload?.videoId) return;
 
+    const watchPct = event.payload.watchPct || 100;
+
     await this.prisma.studentVideoProgress.upsert({
       where: {
         studentId_videoId: {
@@ -148,19 +155,30 @@ export class AnalyticsService {
         videoId: event.payload.videoId,
         courseId: event.courseId,
         lessonId: event.lessonId,
-        watchPct: event.payload.watchPct || 100,
+        watchPct: watchPct,
         secondsWatched: event.payload.secondsWatched || 0,
         videoDuration: event.payload.duration || 0,
-        completed: true,
+        completed: watchPct >= 90,
         lastPosition: event.payload.duration || 0,
       },
       update: {
-        watchPct: event.payload.watchPct || 100,
+        watchPct: watchPct,
         secondsWatched: event.payload.secondsWatched || 0,
-        completed: true,
+        completed: watchPct >= 90,
         lastPosition: event.payload.duration || 0,
       },
     });
+
+    // Auto-complete lesson if video watched to 90% or more
+    if (watchPct >= 90) {
+      await this.progressService.completeLesson(
+        studentId,
+        event.lessonId,
+        event.courseId,
+        'VIDEO_COMPLETE',
+        true, // auto-completed
+      );
+    }
   }
 
   private async handleQuizSubmit(
@@ -186,6 +204,17 @@ export class AnalyticsService {
         submittedAt: now,
       },
     });
+
+    // Auto-complete lesson if quiz passed
+    if (event.payload.isPassed && event.lessonId) {
+      await this.progressService.completeLesson(
+        studentId,
+        event.lessonId,
+        event.courseId,
+        'QUIZ_PASS',
+        true, // auto-completed
+      );
+    }
   }
 
   private async handleCourseEnroll(

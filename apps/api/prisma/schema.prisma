@@ -61,6 +61,7 @@ enum EnrollmentStatus {
   ACTIVE
   COMPLETED
   DROPPED
+  EXPIRED
 }
 
 enum PaymentStatus {
@@ -206,11 +207,13 @@ model User {
   lastLoginAt      DateTime?        @map("last_login_at")
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
+  deletedAt        DateTime?        @map("deleted_at")
 
   // Relations
   instructorProfile          InstructorProfile?
   coursesAsInstructor        CourseInstructor[]
   coursesCreated             Course[]                    @relation("CourseCreator")
+  coursesReviewed            Course[]                    @relation("CourseReviewer")
   materialsUploaded          Material[]
   enrollments                Enrollment[]
   accessCodesCreated         AccessCode[]
@@ -243,7 +246,12 @@ model User {
   skillTreesCreated          SkillTree[]
   notifications              Notification[]
   notificationPreference     NotificationPreference?
+  bulkNotificationsSent      BulkNotification[]
 
+  @@index([role])
+  @@index([status])
+  @@index([lastLoginAt])
+  @@index([deletedAt])
   @@map("users")
 }
 
@@ -325,18 +333,23 @@ model Course {
   level         CourseLevel  @default(BEGINNER)
   status        CourseStatus @default(DRAFT)
   pricingModel  PricingModel @default(FREE) @map("pricing_model")
-  price         Float?
+  price         Int?         @default(0)   // Price in cents (optional for free courses)
   isFeatured    Boolean      @default(false) @map("is_featured")
   categoryId    String?      @map("category_id")
   createdById   String       @map("created_by_id")
   approvedAt    DateTime?    @map("approved_at")
   publishedAt   DateTime?    @map("published_at")
+  reviewedById  String?      @map("reviewed_by_id")
+  reviewedAt    DateTime?    @map("reviewed_at")
+  rejectionFeedback String?  @map("rejection_feedback")
   createdAt     DateTime     @default(now()) @map("created_at")
   updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
 
   // Relations
   category          Category?          @relation(fields: [categoryId], references: [id])
   createdBy         User               @relation("CourseCreator", fields: [createdById], references: [id])
+  reviewedBy        User?              @relation("CourseReviewer", fields: [reviewedById], references: [id])
   instructors       CourseInstructor[]
   sections          CourseSection[]
   enrollments       Enrollment[]
@@ -347,6 +360,10 @@ model Course {
   studentProgress   StudentProgress[]
   streams           CourseStream[]
 
+  @@index([status])
+  @@index([categoryId])
+  @@index([createdById])
+  @@index([deletedAt])
   @@map("courses")
 }
 
@@ -395,6 +412,7 @@ model Lesson {
   material      Material?        @relation(fields: [materialId], references: [id])
   codeExercises CodeExercise[]
   progress      LessonProgress[]
+  communityMessages CommunityMessage[]
 
   @@map("lessons")
 }
@@ -659,6 +677,7 @@ model Enrollment {
   userId          String           @map("user_id")
   courseId        String           @map("course_id")
   status          EnrollmentStatus @default(ACTIVE)
+  expiresAt       DateTime?        @map("expires_at") // For access code or subscription expiry
   progressPercent Float            @default(0) @map("progress_percent")
   paymentStatus   PaymentStatus    @default(FREE) @map("payment_status")
   enrolledAt      DateTime         @default(now()) @map("enrolled_at")
@@ -668,6 +687,10 @@ model Enrollment {
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+  @@index([expiresAt])
   @@map("enrollments")
 }
 
@@ -705,6 +728,9 @@ model AccessCode {
   material  Material?         @relation("VideoAccessCodes", fields: [materialId], references: [id])
   usages    AccessCodeUsage[]
 
+  @@index([status])
+  @@index([courseId])
+  @@index([createdById])
   @@map("access_codes")
 }
 
@@ -799,6 +825,7 @@ model CommunityMessage {
   channelId String                 @map("channel_id")
   authorId  String                 @map("author_id")
   parentId  String?                @map("parent_id")
+  lessonId  String?                @map("lesson_id") // Optional lesson-level discussion
   body      String
   status    CommunityMessageStatus @default(ACTIVE)
   isPinned  Boolean                @default(false) @map("is_pinned")
@@ -812,12 +839,14 @@ model CommunityMessage {
   channel           CommunityChannel            @relation(fields: [channelId], references: [id], onDelete: Cascade)
   author            User                        @relation(fields: [authorId], references: [id], onDelete: Cascade)
   parent            CommunityMessage?           @relation("CommunityThread", fields: [parentId], references: [id])
+  lesson            Lesson?                     @relation(fields: [lessonId], references: [id], onDelete: SetNull)
   replies           CommunityMessage[]          @relation("CommunityThread")
   flags             CommunityMessageFlag[]
   moderationActions CommunityModerationAction[]
 
   @@index([courseId, channelId, createdAt])
   @@index([parentId, createdAt])
+  @@index([lessonId, createdAt])
   @@map("community_messages")
 }
 
@@ -911,6 +940,10 @@ model AuditLog {
   userAgent  String?  @map("user_agent")
   createdAt  DateTime @default(now()) @map("created_at")
 
+  @@index([userId])
+  @@index([entityType])
+  @@index([createdAt])
+  @@index([entityType, entityId])
   @@map("audit_logs")
 }
 
@@ -922,7 +955,7 @@ model SubscriptionPlan {
   name         String // "Basic Monthly", "Pro Yearly"
   tier         SubscriptionTier
   billingCycle BillingCycle     @map("billing_cycle")
-  price        Float // Price in cents/smallest currency unit
+  price        Int         // Price in cents
   currency     String           @default("USD")
   features     Json // Array of feature strings
   limits       Json // { "executions_per_day": 100, "storage_mb": 1000 }
@@ -961,6 +994,9 @@ model Subscription {
   plan         SubscriptionPlan     @relation(fields: [planId], references: [id])
   transactions PaymentTransaction[]
 
+  @@index([userId])
+  @@index([externalId])
+  @@index([status])
   @@map("subscriptions")
 }
 
@@ -968,7 +1004,7 @@ model PaymentTransaction {
   id             String            @id @default(cuid())
   userId         String            @map("user_id")
   subscriptionId String?           @map("subscription_id")
-  amount         Float // Amount in cents/smallest currency unit
+  amount         Int         // Amount in cents
   currency       String            @default("USD")
   status         TransactionStatus @default(PENDING)
   // Provider-agnostic
@@ -987,6 +1023,7 @@ model PaymentTransaction {
   subscription Subscription? @relation(fields: [subscriptionId], references: [id])
 
   @@index([userId, createdAt])
+  @@index([subscriptionId])
   @@index([externalId])
   @@map("payment_transactions")
 }
@@ -1006,6 +1043,20 @@ model PaymentCustomer {
   @@unique([userId, provider])
   @@unique([provider, externalId])
   @@map("payment_customers")
+}
+
+model WebhookEvent {
+  id          String   @id @default(uuid())
+  provider    String
+  externalId  String   @map("external_id") // Provider's event ID
+  eventType   String   @map("event_type")
+  payload     Json
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@unique([provider, externalId])
+  @@index([provider])
+  @@index([processedAt])
+  @@map("webhook_events")
 }
 
 // ============ SESSION MANAGEMENT ============
@@ -1082,6 +1133,8 @@ enum AnalyticsEventType {
   QUIZ_SUBMIT
   ASSIGNMENT_START
   ASSIGNMENT_SUBMIT
+  LIVE_CLASS_ATTENDED
+  LIVE_CLASS_LEFT
 }
 
 model StudentActivityEvent {
@@ -1337,4 +1390,26 @@ model NotificationPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_preferences")
+}
+
+model BulkNotification {
+  id              String   @id @default(cuid())
+  subject         String
+  message         String   @db.Text
+  type            NotificationType
+  recipientGroup  String   @map("recipient_group") // ALL_USERS, ALL_STUDENTS, ALL_INSTRUCTORS, CUSTOM
+  recipientIds    String[] @map("recipient_ids") // Array of user IDs (if CUSTOM)
+  sentBy          String   @map("sent_by")
+  sentAt          DateTime @default(now()) @map("sent_at")
+  scheduledFor    DateTime? @map("scheduled_for") // For scheduled notifications
+  recipientCount  Int      @map("recipient_count")
+  deliveredCount  Int      @default(0) @map("delivered_count")
+  status          String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+
+  sentByUser User @relation(fields: [sentBy], references: [id])
+
+  @@index([sentBy])
+  @@index([status])
+  @@index([sentAt])
+  @@map("bulk_notifications")
 }

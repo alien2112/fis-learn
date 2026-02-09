@@ -58,3 +58,6 @@ export * from './live-stream-provider.interface';
 
 // Code Execution Provider
 export * from './code-execution-provider.interface';
+
+// Audit Log Service
+export * from './audit-log-service.interface';

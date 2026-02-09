@@ -83,4 +83,14 @@ export class DashboardController {
   async getStudentStats(@CurrentUser() user: AuthUser) {
     return this.dashboardService.getStudentStats(user.id);
   }
+
+  @Get('top-instructors')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get top instructors by student count' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of instructors (default: 5)' })
+  @ApiResponse({ status: 200, description: 'Returns top instructors' })
+  async getTopInstructors(@Query('limit') limit?: string) {
+    const itemLimit = limit ? parseInt(limit, 10) : 5;
+    return this.dashboardService.getTopInstructors(itemLimit);
+  }
 }

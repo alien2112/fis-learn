@@ -14,16 +14,21 @@ import {
   UserQueryDto,
 } from './dto';
 import { Role, UserStatus, Prisma } from '@prisma/client';
+import { ChangePasswordDto } from '@/modules/auth/dto/reset-password.dto';
+import { AuditLogService } from '@/common/services/audit-log.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditLog: AuditLogService,
+  ) {}
 
   async findAll(query: UserQueryDto) {
     const { page = 1, limit = 10, search, role, status, sortBy = 'createdAt', sortOrder = 'desc' } = query;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.UserWhereInput = {};
+    const where: Prisma.UserWhereInput = { deletedAt: null };
 
     if (search) {
       where.OR = [
@@ -109,6 +114,7 @@ export class UsersService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.UserWhereInput = {
+      deletedAt: null,
       role: { in: [Role.ADMIN, Role.SUPER_ADMIN] },
     };
 
@@ -151,8 +157,8 @@ export class UsersService {
   }
 
   async findOne(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
+    const user = await this.prisma.user.findFirst({
+      where: { id, deletedAt: null },
       select: {
         id: true,
         email: true,
@@ -187,9 +193,9 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto, creatorRole: Role) {
-    // Check if email already exists
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
+    // Check if email already exists (exclude soft-deleted)
+    const existingUser = await this.prisma.user.findFirst({
+      where: { email: dto.email.toLowerCase(), deletedAt: null },
     });
 
     if (existingUser) {
@@ -237,8 +243,8 @@ export class UsersService {
   }
 
   async update(id: string, dto: UpdateUserDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
+    const user = await this.prisma.user.findFirst({
+      where: { id, deletedAt: null },
     });
 
     if (!user) {
@@ -264,9 +270,9 @@ export class UsersService {
     return updatedUser;
   }
 
-  async updateStatus(id: string, dto: UpdateUserStatusDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
+  async updateStatus(id: string, dto: UpdateUserStatusDto, adminUserId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, deletedAt: null },
     });
 
     if (!user) {
@@ -298,12 +304,21 @@ export class UsersService {
       });
     }
 
+    // Log the status change
+    await this.auditLog.logDataChange(
+      adminUserId,
+      'USER_STATUS_CHANGE',
+      'USER',
+      id,
+      { old: { status: user.status }, new: { status: dto.status } },
+    );
+
     return updatedUser;
   }
 
-  async updateRole(id: string, dto: UpdateRoleDto, updaterRole: Role) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
+  async updateRole(id: string, dto: UpdateRoleDto, updaterRole: Role, adminUserId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, deletedAt: null },
     });
 
     if (!user) {
@@ -331,6 +346,11 @@ export class UsersService {
       },
     });
 
+    // Invalidate all refresh tokens to force re-authentication with new role
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId: id },
+    });
+
     // Create instructor profile if promoting to instructor
     if (dto.role === Role.INSTRUCTOR && user.role !== Role.INSTRUCTOR) {
       const existingProfile = await this.prisma.instructorProfile.findUnique({
@@ -344,12 +364,21 @@ export class UsersService {
       }
     }
 
+    // Log the role change
+    await this.auditLog.logDataChange(
+      adminUserId,
+      'USER_ROLE_CHANGE',
+      'USER',
+      id,
+      { old: { role: user.role }, new: { role: dto.role } },
+    );
+
     return updatedUser;
   }
 
-  async delete(id: string, deleterRole: Role) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
+  async delete(id: string, deleterRole: Role, adminUserId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, deletedAt: null },
     });
 
     if (!user) {
@@ -366,8 +395,24 @@ export class UsersService {
       throw new ForbiddenException('Only Super Admin can delete Admin users');
     }
 
-    await this.prisma.user.delete({
+    // Log the deletion before executing
+    await this.auditLog.logDataChange(
+      adminUserId,
+      'USER_DELETE',
+      'USER',
+      id,
+      { old: { email: user.email, role: user.role, name: user.name } },
+    );
+
+    // Soft delete: update deletedAt and status instead of hard delete
+    await this.prisma.user.update({
       where: { id },
+      data: { deletedAt: new Date(), status: UserStatus.BANNED },
+    });
+
+    // Invalidate all refresh tokens
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId: id },
     });
 
     return { message: 'User deleted successfully' };
@@ -375,17 +420,20 @@ export class UsersService {
 
   async getStats() {
     const [totalUsers, byRole, byStatus, recentUsers] = await Promise.all([
-      this.prisma.user.count(),
+      this.prisma.user.count({ where: { deletedAt: null } }),
       this.prisma.user.groupBy({
         by: ['role'],
+        where: { deletedAt: null },
         _count: true,
       }),
       this.prisma.user.groupBy({
         by: ['status'],
+        where: { deletedAt: null },
         _count: true,
       }),
       this.prisma.user.count({
         where: {
+          deletedAt: null,
           createdAt: {
             gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
           },
@@ -426,8 +474,8 @@ export class UsersService {
   }
 
   async findMe(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
       select: {
         id: true,
         email: true,
@@ -458,8 +506,8 @@ export class UsersService {
   }
 
   async updateMe(userId: string, dto: UpdateUserDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
     });
 
     if (!user) {
@@ -487,10 +535,10 @@ export class UsersService {
 
   async changePassword(
     userId: string,
-    dto: { currentPassword: string; newPassword: string },
+    dto: ChangePasswordDto,
   ) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
     });
 
     if (!user) {

@@ -1,0 +1,267 @@
+{
+  "common": {
+    "appName": "FIS Learn",
+    "adminPanel": "لوحة الإدارة",
+    "dashboard": "لوحة التحكم",
+    "users": "المستخدمين",
+    "students": "الطلاب",
+    "instructors": "المدرسين",
+    "courses": "الكورسات",
+    "categories": "الأقسام",
+    "skillTrees": "شجرة المهارات",
+    "accessCodes": "أكواد الدخول",
+    "subscriptions": "الاشتراكات",
+    "enrollments": "التسجيلات",
+    "streaming": "البث المباشر",
+    "community": "المجتمع",
+    "notifications": "الإشعارات",
+    "analytics": "التقارير",
+    "auditLogs": "سجلات النشاط",
+    "settings": "الإعدادات",
+    "profile": "الملف الشخصي",
+    "logout": "تسجيل الخروج",
+    "collapse": "طي",
+    "search": "بحث",
+    "filter": "فلتر",
+    "export": "تصدير",
+    "import": "استيراد",
+    "create": "إنشاء",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "actions": "إجراءات",
+    "status": "الحالة",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "success": "نجح",
+    "noData": "مفيش بيانات",
+    "total": "الإجمالي",
+    "viewDetails": "شوف التفاصيل",
+    "accessDenied": "تم رفض الوصول",
+    "noPermissionMessage": "معندكش صلاحية تدخل لوحة الإدارة."
+  },
+  "auth": {
+    "adminLogin": "تسجيل دخول الإدارة",
+    "loginDescription": "ادخل بياناتك عشان تدخل لوحة الإدارة",
+    "email": "البريد الإلكتروني",
+    "emailPlaceholder": "admin@fis-learn.com",
+    "password": "كلمة السر",
+    "passwordPlaceholder": "ادخل كلمة السر",
+    "signIn": "دخول",
+    "signingIn": "جاري تسجيل الدخول...",
+    "demoCredentials": "بيانات تجريبية:",
+    "invalidCredentials": "البريد الإلكتروني أو كلمة السر غلط"
+  },
+  "subscriptions": {
+    "title": "باقات الاشتراك",
+    "subtitle": "إدارة الباقات والأسعار",
+    "createPlan": "إنشاء باقة جديدة",
+    "editPlan": "تعديل الباقة",
+    "deletePlan": "حذف الباقة",
+    "planName": "اسم الباقة",
+    "description": "الوصف",
+    "price": "السعر",
+    "interval": "فترة الفوترة",
+    "features": "المميزات",
+    "maxCourses": "أقصى عدد كورسات",
+    "maxStorage": "أقصى مساحة تخزين (GB)",
+    "support": "مستوى الدعم",
+    "isActive": "نشط",
+    "createdAt": "تاريخ الإنشاء",
+    "updatedAt": "تاريخ التحديث",
+    "intervals": {
+      "MONTHLY": "شهري",
+      "YEARLY": "سنوي",
+      "LIFETIME": "مدى الحياة"
+    },
+    "supportLevels": {
+      "BASIC": "عادي",
+      "PRIORITY": "أولوية",
+      "PREMIUM": "مميز"
+    },
+    "stats": {
+      "totalPlans": "إجمالي الباقات",
+      "activePlans": "باقات نشطة",
+      "totalSubscribers": "إجمالي المشتركين",
+      "monthlyRevenue": "الإيرادات الشهرية"
+    },
+    "form": {
+      "nameRequired": "اسم الباقة مطلوب",
+      "priceRequired": "السعر مطلوب",
+      "priceMin": "السعر لازم يكون 0 على الأقل",
+      "intervalRequired": "فترة الفوترة مطلوبة",
+      "descriptionPlaceholder": "اكتب وصف الباقة",
+      "featuresList": "قائمة المميزات (واحدة في كل سطر)",
+      "maxCoursesPlaceholder": "غير محدود",
+      "maxStoragePlaceholder": "بالجيجابايت"
+    },
+    "deleteConfirm": {
+      "title": "حذف الباقة",
+      "message": "متأكد إنك عايز تحذف الباقة دي؟ المشتركين الحاليين مش هيتأثروا، بس اشتراكات جديدة مش هتتعمل.",
+      "confirm": "احذف",
+      "cancel": "إلغاء"
+    }
+  },
+  "enrollments": {
+    "title": "تسجيلات الكورسات",
+    "subtitle": "إدارة تسجيل الطلاب في الكورسات",
+    "student": "الطالب",
+    "course": "الكورس",
+    "enrolledAt": "تاريخ التسجيل",
+    "progress": "التقدم",
+    "status": "الحالة",
+    "completedAt": "تاريخ الإنتهاء",
+    "expiresAt": "ينتهي في",
+    "statuses": {
+      "ACTIVE": "نشط",
+      "COMPLETED": "مكتمل",
+      "CANCELLED": "ملغي",
+      "EXPIRED": "منتهي"
+    },
+    "stats": {
+      "totalEnrollments": "إجمالي التسجيلات",
+      "activeEnrollments": "نشط",
+      "completedEnrollments": "مكتمل",
+      "avgProgress": "متوسط التقدم"
+    },
+    "filters": {
+      "allCourses": "كل الكورسات",
+      "allStatuses": "كل الحالات"
+    },
+    "actions": {
+      "viewProgress": "شوف التقدم",
+      "cancelEnrollment": "إلغاء التسجيل",
+      "extendExpiry": "تمديد الصلاحية"
+    }
+  },
+  "users": {
+    "title": "إدارة المستخدمين",
+    "subtitle": "إدارة المستخدمين والصلاحيات",
+    "role": "الدور",
+    "changeRole": "تغيير الدور",
+    "changeStatus": "تغيير الحالة",
+    "banUser": "حظر المستخدم",
+    "suspendUser": "تعليق المستخدم",
+    "activateUser": "تفعيل المستخدم",
+    "roles": {
+      "STUDENT": "طالب",
+      "INSTRUCTOR": "مدرس",
+      "ADMIN": "مشرف",
+      "SUPER_ADMIN": "مدير عام"
+    },
+    "statuses": {
+      "ACTIVE": "نشط",
+      "SUSPENDED": "معلق",
+      "BANNED": "محظور"
+    },
+    "confirmations": {
+      "changeRole": "تغيير دور المستخدم إلى {role}؟",
+      "banUser": "حظر المستخدم ده؟ هيفقد كل الصلاحيات.",
+      "suspendUser": "تعليق المستخدم ده مؤقتاً؟",
+      "activateUser": "تفعيل حساب المستخدم ده؟"
+    }
+  },
+  "streaming": {
+    "title": "البث المباشر",
+    "subtitle": "إدارة الحصص المباشرة والتسجيلات",
+    "createStream": "إنشاء بث مباشر",
+    "streamTitle": "عنوان البث",
+    "course": "الكورس",
+    "scheduledStart": "موعد البداية",
+    "scheduledEnd": "موعد النهاية",
+    "isLive": "مباشر الآن",
+    "recordings": "التسجيلات",
+    "viewers": "المشاهدين",
+    "duration": "المدة",
+    "statuses": {
+      "SCHEDULED": "مجدول",
+      "LIVE": "مباشر",
+      "ENDED": "انتهى",
+      "CANCELLED": "ملغي"
+    },
+    "stats": {
+      "totalStreams": "إجمالي البث",
+      "liveNow": "مباشر الآن",
+      "scheduled": "مجدول",
+      "totalViewers": "إجمالي المشاهدين"
+    }
+  },
+  "community": {
+    "title": "إدارة المجتمع",
+    "subtitle": "مراقبة القنوات والرسائل",
+    "reportedContent": "محتوى مبلغ عنه",
+    "pinnedMessages": "رسائل مثبتة",
+    "lockedThreads": "مواضيع مقفلة",
+    "channel": "القناة",
+    "message": "الرسالة",
+    "author": "الكاتب",
+    "reportedBy": "أبلغ عنه",
+    "reportReason": "السبب",
+    "actions": {
+      "pin": "تثبيت",
+      "unpin": "إلغاء التثبيت",
+      "lock": "قفل",
+      "unlock": "فتح",
+      "hide": "إخفاء",
+      "restore": "استعادة",
+      "markAnswer": "تحديد كإجابة"
+    }
+  },
+  "auditLogs": {
+    "title": "سجلات النشاط",
+    "subtitle": "سجل نشاط النظام والأمان",
+    "action": "الإجراء",
+    "user": "المستخدم",
+    "entityType": "نوع الكيان",
+    "entityId": "معرف الكيان",
+    "timestamp": "التوقيت",
+    "ipAddress": "عنوان IP",
+    "metadata": "البيانات الإضافية",
+    "filters": {
+      "allActions": "كل الإجراءات",
+      "allUsers": "كل المستخدمين",
+      "dateRange": "نطاق التاريخ"
+    }
+  },
+  "notifications": {
+    "title": "إدارة الإشعارات",
+    "subtitle": "إرسال إشعارات جماعية للمستخدمين",
+    "sendBulk": "إرسال إشعار جماعي",
+    "recipients": "المستلمين",
+    "subject": "الموضوع",
+    "message": "الرسالة",
+    "type": "النوع",
+    "types": {
+      "INFO": "معلومة",
+      "SUCCESS": "نجاح",
+      "WARNING": "تحذير",
+      "ERROR": "خطأ"
+    },
+    "recipientGroups": {
+      "all": "كل المستخدمين",
+      "students": "كل الطلاب",
+      "instructors": "كل المدرسين",
+      "admins": "كل المشرفين",
+      "custom": "اختيار مخصص"
+    },
+    "preview": "معاينة",
+    "send": "إرسال الإشعار",
+    "scheduled": "جدولة لوقت لاحق"
+  },
+  "analytics": {
+    "title": "التقارير والتحليلات",
+    "subtitle": "إحصائيات ومقاييس المنصة",
+    "coursePerformance": "أداء الكورسات",
+    "userEngagement": "تفاعل المستخدمين",
+    "revenue": "الإيرادات",
+    "topCourses": "أفضل الكورسات",
+    "topInstructors": "أفضل المدرسين",
+    "activeUsers": "المستخدمين النشطين",
+    "completionRate": "معدل الإكمال",
+    "avgSessionDuration": "متوسط مدة الجلسة"
+  }
+}

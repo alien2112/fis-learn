@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { GraduationCap, Loader2, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
+  const t = useTranslations('auth');
+  const tCommon = useTranslations('common');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -26,7 +29,7 @@ export default function LoginPage() {
       await login(email, password);
       router.push('/dashboard');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Invalid email or password';
+      const errorMessage = err instanceof Error ? err.message : t('invalidCredentials');
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -40,12 +43,12 @@ export default function LoginPage() {
           <div className="flex justify-center mb-4">
             <div className="flex items-center space-x-2">
               <GraduationCap className="h-10 w-10 text-primary" />
-              <span className="text-2xl font-bold">FIS Learn</span>
+              <span className="text-2xl font-bold">{tCommon('appName')}</span>
             </div>
           </div>
-          <CardTitle className="text-2xl">Admin Login</CardTitle>
+          <CardTitle className="text-2xl">{t('adminLogin')}</CardTitle>
           <CardDescription>
-            Enter your credentials to access the admin panel
+            {t('loginDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -58,11 +61,11 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('email')}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@fis-learn.com"
+                placeholder={t('emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -72,11 +75,11 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('password')}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder={t('passwordPlaceholder')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -89,16 +92,16 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
+                  {t('signingIn')}
                 </>
               ) : (
-                'Sign In'
+                t('signIn')
               )}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Demo credentials:</p>
+            <p>{t('demoCredentials')}</p>
             <p className="font-mono text-xs mt-1">
               admin@fis-learn.com / Admin123!
             </p>

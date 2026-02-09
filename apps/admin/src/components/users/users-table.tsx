@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi, UserQueryParams } from '@/lib/api/users';
 import { User, PaginatedResponse } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,9 +21,24 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useToast } from '@/components/ui/use-toast';
 import { Search, MoreHorizontal, UserPlus, Filter } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -58,11 +73,87 @@ export function UsersTable({
     limit: 10,
     search: '',
   });
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    action: () => void;
+  }>({ open: false, title: '', description: '', action: () => {} });
+
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data, isLoading, isError } = useQuery<PaginatedResponse<User>>({
     queryKey: [mode === 'all' ? 'users' : `users-${mode}`, query],
     queryFn: () => fetchers[mode](query),
   });
+
+  const changeRoleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: string }) =>
+      usersApi.updateRole(userId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [mode === 'all' ? 'users' : `users-${mode}`] });
+      toast({
+        title: 'Success',
+        description: 'User role updated successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to update user role',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const changeStatusMutation = useMutation({
+    mutationFn: ({ userId, status }: { userId: string; status: string }) =>
+      usersApi.updateStatus(userId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [mode === 'all' ? 'users' : `users-${mode}`] });
+      toast({
+        title: 'Success',
+        description: 'User status updated successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to update user status',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleChangeRole = (userId: string, role: string, roleName: string) => {
+    setConfirmDialog({
+      open: true,
+      title: 'Change User Role',
+      description: `Are you sure you want to change this user's role to ${roleName}?`,
+      action: () => {
+        changeRoleMutation.mutate({ userId, role });
+        setConfirmDialog({ ...confirmDialog, open: false });
+      },
+    });
+  };
+
+  const handleChangeStatus = (userId: string, status: string, statusName: string) => {
+    let description = `Are you sure you want to ${statusName.toLowerCase()} this user?`;
+    if (status === 'BANNED') {
+      description = 'Are you sure you want to ban this user? They will lose all access to the platform.';
+    }
+
+    setConfirmDialog({
+      open: true,
+      title: `${statusName} User`,
+      description,
+      action: () => {
+        changeStatusMutation.mutate({ userId, status });
+        setConfirmDialog({ ...confirmDialog, open: false });
+      },
+    });
+  };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -192,9 +283,61 @@ export function UsersTable({
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem>View Details</DropdownMenuItem>
                             <DropdownMenuItem>Edit User</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              Suspend User
-                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger>Change Role</DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuItem
+                                  disabled={user.role === 'STUDENT'}
+                                  onClick={() => handleChangeRole(user.id, 'STUDENT', 'Student')}
+                                >
+                                  Student
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  disabled={user.role === 'INSTRUCTOR'}
+                                  onClick={() => handleChangeRole(user.id, 'INSTRUCTOR', 'Instructor')}
+                                >
+                                  Instructor
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  disabled={user.role === 'ADMIN'}
+                                  onClick={() => handleChangeRole(user.id, 'ADMIN', 'Admin')}
+                                >
+                                  Admin
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  disabled={user.role === 'SUPER_ADMIN'}
+                                  onClick={() => handleChangeRole(user.id, 'SUPER_ADMIN', 'Super Admin')}
+                                >
+                                  Super Admin
+                                </DropdownMenuItem>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger>Change Status</DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuItem
+                                  disabled={user.status === 'ACTIVE'}
+                                  onClick={() => handleChangeStatus(user.id, 'ACTIVE', 'Activate')}
+                                >
+                                  Activate
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  disabled={user.status === 'SUSPENDED'}
+                                  onClick={() => handleChangeStatus(user.id, 'SUSPENDED', 'Suspend')}
+                                  className="text-orange-600"
+                                >
+                                  Suspend
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  disabled={user.status === 'BANNED'}
+                                  onClick={() => handleChangeStatus(user.id, 'BANNED', 'Ban')}
+                                  className="text-destructive"
+                                >
+                                  Ban
+                                </DropdownMenuItem>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -237,6 +380,19 @@ export function UsersTable({
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmDialog.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDialog.action}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

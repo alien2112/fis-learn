@@ -13,8 +13,10 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
-import { CurrentUser } from '@/common/decorators';
+import { CurrentUser, Roles } from '@/common/decorators';
 import { UpdatePreferencesDto } from './dto';
+import { SendBulkNotificationDto } from './dto/send-bulk-notification.dto';
+import { Role } from '@prisma/client';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -85,5 +87,28 @@ export class NotificationsController {
     @Body() dto: UpdatePreferencesDto,
   ) {
     return this.notificationsService.updatePreferences(userId, dto);
+  }
+
+  @Post('send-bulk')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Send bulk notification (admin only)' })
+  async sendBulkNotification(
+    @CurrentUser('id') userId: string,
+    @Body() dto: SendBulkNotificationDto,
+  ) {
+    return this.notificationsService.sendBulkNotification(userId, dto);
+  }
+
+  @Get('bulk-history')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get bulk notification history (admin only)' })
+  async getBulkHistory(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.notificationsService.getBulkHistory(
+      parseInt(page),
+      parseInt(limit),
+    );
   }
 }

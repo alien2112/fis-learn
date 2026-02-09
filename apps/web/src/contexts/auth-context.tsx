@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api/v1';
 
 export interface AuthUser {
   id: string;
@@ -22,6 +22,55 @@ interface AuthContextValue {
   logout: () => Promise<void>;
 }
 
+const VALID_ROLES = ['SUPER_ADMIN', 'ADMIN', 'INSTRUCTOR', 'STUDENT'] as const;
+const VALID_STATUSES = ['ACTIVE', 'SUSPENDED', 'BANNED', 'PENDING_VERIFICATION'] as const;
+
+function sanitizeString(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  // Strip HTML tags and trim
+  return value.replace(/<[^>]*>/g, '').trim();
+}
+
+function sanitizeUrl(value: unknown): string | null {
+  if (typeof value !== 'string' || !value) return null;
+  // Only allow http(s) URLs
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return value;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function sanitizeUser(data: unknown): AuthUser | null {
+  if (!data || typeof data !== 'object') return null;
+
+  const raw = data as Record<string, unknown>;
+
+  if (typeof raw.id !== 'string' || !raw.id) return null;
+  if (typeof raw.email !== 'string' || !raw.email) return null;
+
+  const role = raw.role as string;
+  const status = raw.status as string;
+
+  if (!VALID_ROLES.includes(role as any)) return null;
+  if (!VALID_STATUSES.includes(status as any)) return null;
+
+  return {
+    id: raw.id as string,
+    email: sanitizeString(raw.email),
+    name: sanitizeString(raw.name),
+    role: role as AuthUser['role'],
+    status: status as AuthUser['status'],
+    avatarUrl: sanitizeUrl(raw.avatarUrl),
+    locale: typeof raw.locale === 'string' ? sanitizeString(raw.locale) : undefined,
+    timezone: typeof raw.timezone === 'string' ? sanitizeString(raw.timezone) : undefined,
+  };
+}
+
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -37,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok) {
         throw new Error(payload?.message || 'Unable to fetch user.');
       }
-      setUser(payload?.data || null);
+      setUser(sanitizeUser(payload?.data));
     } catch {
       setUser(null);
     } finally {
