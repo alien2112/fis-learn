@@ -39,9 +39,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4 relative">
+    <div className={`flex min-h-screen items-center justify-center bg-muted/40 p-4 relative ${locale === 'ar' ? 'rtl' : 'ltr'}`}
+         dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       {/* Language switcher in top right */}
-      <div className="absolute top-4 right-4">
+      <div className={`absolute top-4 ${locale === 'ar' ? 'left-4' : 'right-4'}`}>
         <LanguageSwitcher />
       </div>
       
@@ -109,7 +110,7 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             <p>{t('demoCredentials')}</p>
-            <p className="font-mono text-xs mt-1">
+            <p className="font-mono text-xs mt-1 break-all">
               admin@fis-learn.com / Admin123!
             </p>
           </div>
