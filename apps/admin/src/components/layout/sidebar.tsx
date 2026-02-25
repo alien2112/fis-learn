@@ -23,6 +23,7 @@ import {
   Bell,
   BarChart3,
   FileText,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -121,6 +122,12 @@ const navItems: NavItem[] = [
     titleKey: 'auditLogs',
     href: '/audit-logs',
     icon: FileText,
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+  {
+    titleKey: 'images',
+    href: '/images',
+    icon: ImageIcon,
     roles: ['SUPER_ADMIN', 'ADMIN'],
   },
   {
