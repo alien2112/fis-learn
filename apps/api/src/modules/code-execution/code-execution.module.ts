@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { CODE_EXECUTION_PROVIDER } from '../../common/external-services';
 import { Judge0CodeExecutionProvider } from '../../common/external-services/implementations/judge0-code-execution.provider';
+import { InlineCodeExecutionProvider } from '../../common/external-services/implementations/inline-code-execution.provider';
 import { CodeExecutionService } from './code-execution.service';
 import { CodeExecutionController } from './code-execution.controller';
 import { CodeExerciseService } from './code-exercise.service';
@@ -64,6 +65,9 @@ export class CodeExecutionModule {
               case 'judge0':
               default:
                 return new Judge0CodeExecutionProvider(configService);
+
+              case 'inline':
+                return new InlineCodeExecutionProvider(configService);
 
               // Add more providers as they're implemented:
               // case 'piston':

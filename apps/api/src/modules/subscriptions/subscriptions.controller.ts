@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { SubscriptionsService } from './subscriptions.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreatePlanDto,
   UpdatePlanDto,
@@ -22,11 +23,14 @@ import {
   ChangePlanDto,
 } from './dto';
 import { CurrentUser, Public, Roles } from '../../common/decorators';
-import { Role } from '@prisma/client';
+import { Role, SubscriptionStatus } from '@prisma/client';
 
 @Controller({ path: 'subscriptions', version: '1' })
 export class SubscriptionsController {
-  constructor(private readonly subscriptionsService: SubscriptionsService) {}
+  constructor(
+    private readonly subscriptionsService: SubscriptionsService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   // ============ PUBLIC ENDPOINTS ============
 
@@ -36,8 +40,7 @@ export class SubscriptionsController {
   @Public()
   @Get('plans')
   async getPlans() {
-    const plans = await this.subscriptionsService.getPlans(true);
-    return { data: plans };
+    return this.subscriptionsService.getPlans(true);
   }
 
   /**
@@ -46,8 +49,7 @@ export class SubscriptionsController {
   @Public()
   @Get('plans/:id')
   async getPlan(@Param('id') id: string) {
-    const plan = await this.subscriptionsService.getPlanById(id);
-    return { data: plan };
+    return this.subscriptionsService.getPlanById(id);
   }
 
   // ============ USER ENDPOINTS ============
@@ -57,8 +59,7 @@ export class SubscriptionsController {
    */
   @Get('me')
   async getMySubscription(@CurrentUser('id') userId: string) {
-    const subscription = await this.subscriptionsService.getUserSubscription(userId);
-    return { data: subscription };
+    return this.subscriptionsService.getUserSubscription(userId);
   }
 
   /**
@@ -69,8 +70,7 @@ export class SubscriptionsController {
     @CurrentUser('id') userId: string,
     @Body() dto: CreateCheckoutDto,
   ) {
-    const session = await this.subscriptionsService.createCheckoutSession(userId, dto);
-    return { data: session };
+    return this.subscriptionsService.createCheckoutSession(userId, dto);
   }
 
   /**
@@ -81,8 +81,7 @@ export class SubscriptionsController {
     @CurrentUser('id') userId: string,
     @Body() dto: CancelSubscriptionDto,
   ) {
-    const subscription = await this.subscriptionsService.cancelSubscription(userId, dto);
-    return { data: subscription };
+    return this.subscriptionsService.cancelSubscription(userId, dto);
   }
 
   /**
@@ -90,8 +89,7 @@ export class SubscriptionsController {
    */
   @Post('resume')
   async resumeSubscription(@CurrentUser('id') userId: string) {
-    const subscription = await this.subscriptionsService.resumeSubscription(userId);
-    return { data: subscription };
+    return this.subscriptionsService.resumeSubscription(userId);
   }
 
   /**
@@ -102,8 +100,7 @@ export class SubscriptionsController {
     @CurrentUser('id') userId: string,
     @Body() dto: ChangePlanDto,
   ) {
-    const subscription = await this.subscriptionsService.changePlan(userId, dto);
-    return { data: subscription };
+    return this.subscriptionsService.changePlan(userId, dto);
   }
 
   /**
@@ -118,7 +115,7 @@ export class SubscriptionsController {
       userId,
       returnUrl || process.env.APP_URL + '/settings/billing',
     );
-    return { data: { url } };
+    return { url };
   }
 
   /**
@@ -130,7 +127,7 @@ export class SubscriptionsController {
     @Param('feature') feature: string,
   ) {
     const hasAccess = await this.subscriptionsService.checkFeatureAccess(userId, feature);
-    return { data: { hasAccess } };
+    return { hasAccess };
   }
 
   // ============ ADMIN ENDPOINTS ============
@@ -141,8 +138,7 @@ export class SubscriptionsController {
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Post('plans')
   async createPlan(@Body() dto: CreatePlanDto) {
-    const plan = await this.subscriptionsService.createPlan(dto);
-    return { data: plan };
+    return this.subscriptionsService.createPlan(dto);
   }
 
   /**
@@ -151,8 +147,7 @@ export class SubscriptionsController {
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Patch('plans/:id')
   async updatePlan(@Param('id') id: string, @Body() dto: UpdatePlanDto) {
-    const plan = await this.subscriptionsService.updatePlan(id, dto);
-    return { data: plan };
+    return this.subscriptionsService.updatePlan(id, dto);
   }
 
   /**
@@ -161,8 +156,23 @@ export class SubscriptionsController {
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Get('admin/plans')
   async getAllPlans() {
-    const plans = await this.subscriptionsService.getPlans(false);
-    return { data: plans };
+    return this.subscriptionsService.getPlans(false);
+  }
+
+  /**
+   * Get subscription statistics (admin only)
+   */
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @Get('admin/stats')
+  async getAdminStats() {
+    const [totalPlans, activePlans, totalSubscribers] = await Promise.all([
+      this.prisma.subscriptionPlan.count(),
+      this.prisma.subscriptionPlan.count({ where: { isActive: true } }),
+      this.prisma.subscription.count({
+        where: { status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING] } },
+      }),
+    ]);
+    return { totalPlans, activePlans, totalSubscribers, monthlyRevenue: 0 };
   }
 
   // ============ WEBHOOK ENDPOINT ============

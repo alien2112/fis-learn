@@ -1,7 +1,7 @@
 'use client';
 
 import { Bell } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createNotificationSocket } from '@/lib/realtime/notification-socket';
 import { NotificationCenter } from './NotificationCenter';
 import { Socket } from 'socket.io-client';
@@ -43,13 +43,13 @@ export function NotificationBell() {
     };
   }, []);
 
-  const handleMarkAsRead = () => {
+  const handleMarkAsRead = useCallback(() => {
     setUnreadCount((prev) => Math.max(0, prev - 1));
-  };
+  }, []);
 
-  const handleMarkAllAsRead = () => {
+  const handleMarkAllAsRead = useCallback(() => {
     setUnreadCount(0);
-  };
+  }, []);
 
   return (
     <div className="relative">

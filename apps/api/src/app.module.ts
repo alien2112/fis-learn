@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -25,6 +25,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { ConsentModule } from './modules/consent/consent.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
+import { SiteSettingsModule } from './modules/site-settings/site-settings.module';
 import { ResilienceModule } from './common/resilience/resilience.module';
 import { StorageModule } from './common/storage/storage.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -69,15 +70,11 @@ import configuration from './config/configuration';
     // Scheduling for cron jobs
     ScheduleModule.forRoot(),
 
-    // Caching layer - in-memory with 5 min default TTL
-    CacheModule.registerAsync({
+    // Caching layer - in-memory with 1 min default TTL
+    CacheModule.register({
       isGlobal: true,
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        ttl: 60 * 1000, // 1 minute default
-        max: 1000, // max items in cache
-      }),
+      ttl: 60 * 1000, // 1 minute default
+      max: 1000,      // max items in cache
     }),
 
     // Feature modules
@@ -99,6 +96,7 @@ import configuration from './config/configuration';
     MaintenanceModule,
     ConsentModule,
     AuditLogsModule,
+    SiteSettingsModule,
 
     // Infrastructure modules
     ResilienceModule,

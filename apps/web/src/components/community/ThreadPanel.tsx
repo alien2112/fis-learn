@@ -4,6 +4,8 @@ import { MessageComposer } from '@/components/community/MessageComposer';
 import { MessageItem, CommunityMessageWithDelivery } from '@/components/community/MessageItem';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
+import { cn } from '@/lib/utils';
 
 export function ThreadPanel({
   parent,
@@ -15,6 +17,7 @@ export function ThreadPanel({
   onLock,
   onReport,
   onRemove,
+  onRetry,
   canModerate,
   hasMore,
   onLoadMore,
@@ -33,6 +36,7 @@ export function ThreadPanel({
   onLock?: (message: CommunityMessageWithDelivery) => void;
   onReport?: (message: CommunityMessageWithDelivery) => void;
   onRemove?: (message: CommunityMessageWithDelivery) => void;
+  onRetry?: (message: CommunityMessageWithDelivery) => void;
   canModerate?: boolean;
   hasMore?: boolean;
   onLoadMore?: () => void;
@@ -42,24 +46,27 @@ export function ThreadPanel({
   allowLock?: boolean;
   helper?: string;
 }) {
-  const helperText = disabled ? helper ?? 'This channel is locked.' : undefined;
+  const t = useTranslations('community');
+  const locale = useLocale();
+  const isRTL = locale === 'ar';
+  const helperText = disabled ? helper ?? t('locked_channel_helper') : undefined;
 
   return (
-    <div className="flex h-full flex-col border-l bg-background">
+    <div className={cn("flex h-full flex-col bg-background", isRTL ? "border-r" : "border-l")}>
       <div className="flex items-center justify-between border-b px-4 py-3">
         <div>
-          <h3 className="text-sm font-semibold">Thread</h3>
-          <p className="text-xs text-muted-foreground">Replies and answers</p>
+          <h3 className="text-sm font-semibold">{t('thread_title')}</h3>
+          <p className="text-xs text-muted-foreground">{t('thread_subtitle')}</p>
         </div>
         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 font-sans">
         {hasMore && (
-          <Button variant="outline" size="sm" onClick={onLoadMore} disabled={isLoading}>
-            {isLoading ? 'Loading...' : 'Load older replies'}
+          <Button variant="outline" className="w-full" size="sm" onClick={onLoadMore} disabled={isLoading}>
+            {isLoading ? t('loading') : t('load_older_replies')}
           </Button>
         )}
         <MessageItem
@@ -73,11 +80,12 @@ export function ThreadPanel({
           onLock={onLock}
           onReport={onReport}
           onRemove={onRemove}
+          onRetry={onRetry}
         />
 
-        <div className="pl-6 space-y-4 border-l border-dashed border-muted">
+        <div className={cn("space-y-4 border-dashed border-muted", isRTL ? "pr-6 border-r" : "pl-6 border-l")}>
           {replies.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No replies yet. Be the first to respond.</p>
+            <p className="text-sm text-muted-foreground">{t('no_replies_yet')}</p>
           ) : (
             replies.map((reply, index) => (
               <MessageItem
@@ -90,6 +98,7 @@ export function ThreadPanel({
                 onMarkAnswer={onMarkAnswer}
                 onReport={onReport}
                 onRemove={onRemove}
+                onRetry={onRetry}
               />
             ))
           )}
@@ -98,7 +107,7 @@ export function ThreadPanel({
 
       <div className="border-t p-4">
         <MessageComposer
-          placeholder="Write a reply..."
+          placeholder={t('write_reply_placeholder')}
           onSend={onSendReply}
           disabled={disabled}
           helper={helperText}

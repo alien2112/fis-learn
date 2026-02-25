@@ -78,6 +78,45 @@ const CATEGORY_LABELS: Record<string, string> = {
   trading: '📈 Trading',
 };
 
+// ─── Data normalisers (DB shape → component shape) ────────────────────────────
+function normalizeNode(n: any): SkillNode {
+  return {
+    id: n.id,
+    name: n.name,
+    description: n.description ?? '',
+    icon: n.icon ?? '📚',
+    position: {
+      x: n.positionX ?? n.position?.x ?? 500,
+      y: n.positionY ?? n.position?.y ?? 300,
+    },
+    prerequisites: typeof n.prerequisites === 'string'
+      ? JSON.parse(n.prerequisites)
+      : (n.prerequisites ?? []),
+    unlockConditions: typeof n.unlockConditions === 'string'
+      ? JSON.parse(n.unlockConditions)
+      : (n.unlockConditions ?? { projectsCompleted: 0, testScore: 0, timeSpent: 0 }),
+    resources: typeof n.resources === 'string'
+      ? JSON.parse(n.resources)
+      : (n.resources ?? { lessons: [], projects: [], assessments: [] }),
+    metadata: typeof n.metadata === 'string'
+      ? JSON.parse(n.metadata)
+      : (n.metadata ?? { estimatedHours: 1, difficulty: 1, category: 'fundamentals' }),
+    status: n.status ?? 'available',
+    progress: n.progress ?? 0,
+  };
+}
+
+function normalizeTree(t: any): SkillTree {
+  return {
+    id: t.id,
+    name: t.name,
+    description: t.description ?? '',
+    category: t.category,
+    published: t.published ?? false,
+    nodes: Array.isArray(t.nodes) ? t.nodes.map(normalizeNode) : [],
+  };
+}
+
 export default function SkillTreeManagementPage() {
   const queryClient = useQueryClient();
   const [selectedTree, setSelectedTree] = useState<SkillTree | null>(null);
@@ -86,12 +125,20 @@ export default function SkillTreeManagementPage() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   // Fetch skill trees from API
-  const { data: skillTrees = [], isLoading } = useQuery<SkillTree[]>({
+  const { data: skillTrees = [], isLoading, isError } = useQuery<SkillTree[]>({
     queryKey: ['skill-trees', categoryFilter],
     queryFn: async () => {
-      const params = categoryFilter !== 'all' ? `?category=${categoryFilter}` : '';
-      const response = await apiClient.get(`/admin/skill-trees${params}`);
-      return response.data;
+      try {
+        const params = categoryFilter !== 'all' ? `?category=${categoryFilter}` : '';
+        const response = await apiClient.get(`/admin/skill-trees${params}`);
+        // API wraps response: { data: [...], statusCode: 200 }
+        const result = response.data?.data ?? response.data;
+        const arr = Array.isArray(result) ? result : [];
+        return arr.map(normalizeTree);
+      } catch (error) {
+        console.error('Failed to fetch skill trees:', error);
+        return [];
+      }
     },
   });
 
@@ -100,7 +147,8 @@ export default function SkillTreeManagementPage() {
     mutationFn: async (tree: SkillTree) => {
       const { id, ...data } = tree;
       const response = await apiClient.post('/admin/skill-trees', data);
-      return response.data;
+      const raw = response.data?.data ?? response.data;
+      return raw ? normalizeTree(raw) : normalizeTree({ ...data, id: '' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['skill-trees'] });
@@ -117,7 +165,8 @@ export default function SkillTreeManagementPage() {
   const updateMutation = useMutation({
     mutationFn: async (tree: SkillTree) => {
       const response = await apiClient.put(`/admin/skill-trees/${tree.id}`, tree);
-      return response.data;
+      const raw = response.data?.data ?? response.data;
+      return raw ? normalizeTree(raw) : normalizeTree(tree);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['skill-trees'] });
@@ -170,12 +219,13 @@ export default function SkillTreeManagementPage() {
   };
 
   const handleDuplicateTree = (tree: SkillTree) => {
+    const treeNodes = Array.isArray(tree.nodes) ? tree.nodes : [];
     const duplicated: SkillTree = {
       ...tree,
       id: '',
       name: `${tree.name} (Copy)`,
       published: false,
-      nodes: tree.nodes.map(n => ({
+      nodes: treeNodes.map(n => ({
         ...n,
         id: `${n.id}-copy`,
       })),
@@ -286,7 +336,19 @@ export default function SkillTreeManagementPage() {
             <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
             <p className="text-slate-500 mt-4">Loading skill trees...</p>
           </div>
-        ) : skillTrees.length === 0 ? (
+        ) : isError ? (
+          <div className="text-center py-12 bg-white rounded-xl border">
+            <GraduationCap className="w-16 h-16 text-red-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-red-700">Failed to load skill trees</h3>
+            <p className="text-slate-500 mt-1">Please try refreshing the page</p>
+            <button
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['skill-trees'] })}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </div>
+        ) : !Array.isArray(skillTrees) || skillTrees.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl border">
             <GraduationCap className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-700">No skill trees yet</h3>
@@ -320,7 +382,7 @@ export default function SkillTreeManagementPage() {
                 <div className="flex items-center gap-4 text-sm text-slate-500 mb-4">
                   <span className="flex items-center gap-1">
                     <GraduationCap className="w-4 h-4" />
-                    {tree.nodes.length} skill{tree.nodes.length !== 1 ? 's' : ''}
+                    {(tree.nodes ?? []).length} skill{(tree.nodes ?? []).length !== 1 ? 's' : ''}
                   </span>
                   <span>{CATEGORY_LABELS[tree.category] || tree.category}</span>
                 </div>

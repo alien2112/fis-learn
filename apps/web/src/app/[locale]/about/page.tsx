@@ -6,9 +6,21 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
+import { getSiteSettings } from '@/lib/api/site-settings';
+import { DEFAULT_SITE_IMAGE_SETTINGS } from '@/lib/placeholder-images';
 
 export default async function AboutPage({ params: { locale } }: { params: { locale: string } }) {
-  const t = await getTranslations('about');
+  const [t, apiSettings] = await Promise.all([
+    getTranslations({ locale, namespace: 'about' }),
+    getSiteSettings(),
+  ]);
+  const settings = { ...apiSettings };
+  for (const k of Object.keys(DEFAULT_SITE_IMAGE_SETTINGS)) {
+    const fromApi = apiSettings[k];
+    if (fromApi == null || String(fromApi).trim() === '') {
+      settings[k] = DEFAULT_SITE_IMAGE_SETTINGS[k];
+    }
+  }
 
   return (
     <main className="overflow-hidden">
@@ -26,7 +38,14 @@ export default async function AboutPage({ params: { locale } }: { params: { loca
       <MissionVision />
       <ValuesSection />
       <TimelineSection />
-      <TeamSection />
+      <TeamSection
+        teamImages={{
+          sarah: settings.team_sarah_image,
+          michael: settings.team_michael_image,
+          emily: settings.team_emily_image,
+          david: settings.team_david_image,
+        }}
+      />
 
       <section className="py-24">
         <div className="container">

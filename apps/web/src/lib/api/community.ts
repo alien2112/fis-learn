@@ -2,6 +2,19 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api/v1';
 
+function getCsrfToken(): string {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
+function mutationHeaders(): Record<string, string> {
+  const csrf = getCsrfToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (csrf) headers['X-CSRF-Token'] = csrf;
+  return headers;
+}
+
 export interface CommunityChannel {
   id: string;
   courseId: string;
@@ -85,9 +98,7 @@ export const communityApi = {
   createMessage: async (channelId: string, body: string, parentId?: string, clientId?: string) => {
     const response = await fetch(`${API_URL}/community/channels/${channelId}/messages`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: mutationHeaders(),
       credentials: 'include',
       body: JSON.stringify({ body, parentId, clientId }),
     });
@@ -102,9 +113,7 @@ export const communityApi = {
   pinMessage: async (messageId: string, value: boolean) => {
     const response = await fetch(`${API_URL}/community/messages/${messageId}/pin`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: mutationHeaders(),
       credentials: 'include',
       body: JSON.stringify({ value }),
     });
@@ -118,9 +127,7 @@ export const communityApi = {
   markAnswer: async (messageId: string, value: boolean) => {
     const response = await fetch(`${API_URL}/community/messages/${messageId}/mark-answer`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: mutationHeaders(),
       credentials: 'include',
       body: JSON.stringify({ value }),
     });
@@ -134,9 +141,7 @@ export const communityApi = {
   lockThread: async (messageId: string, value: boolean) => {
     const response = await fetch(`${API_URL}/community/messages/${messageId}/lock`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: mutationHeaders(),
       credentials: 'include',
       body: JSON.stringify({ value }),
     });
@@ -150,9 +155,7 @@ export const communityApi = {
   reportMessage: async (messageId: string, reason?: string) => {
     const response = await fetch(`${API_URL}/community/messages/${messageId}/report`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: mutationHeaders(),
       credentials: 'include',
       body: JSON.stringify({ reason }),
     });
@@ -164,8 +167,11 @@ export const communityApi = {
   },
 
   removeMessage: async (messageId: string) => {
+    const csrfHeaders = mutationHeaders();
+    delete csrfHeaders['Content-Type'];
     const response = await fetch(`${API_URL}/community/messages/${messageId}`, {
       method: 'DELETE',
+      headers: csrfHeaders,
       credentials: 'include',
     });
     const payload = await response.json();

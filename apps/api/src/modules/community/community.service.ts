@@ -11,6 +11,7 @@ import {
   CommunityMessageStatus,
   CommunityModerationActionType,
   EnrollmentStatus,
+  PricingModel,
   Role,
 } from '@prisma/client';
 import slugify from 'slugify';
@@ -48,6 +49,7 @@ export class CommunityService {
       select: {
         id: true,
         createdById: true,
+        pricingModel: true,
         instructors: { select: { userId: true } },
       },
     });
@@ -67,6 +69,11 @@ export class CommunityService {
       if (!isInstructor) {
         throw new ForbiddenException('Access denied to this course');
       }
+      return course;
+    }
+
+    // Free courses: any authenticated user can access the community
+    if (course.pricingModel === PricingModel.FREE) {
       return course;
     }
 

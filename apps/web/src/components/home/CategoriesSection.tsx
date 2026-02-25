@@ -45,6 +45,18 @@ const gradientMap: Record<string, string> = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api/v1';
 
+// Defined at module level so it is not recreated on every render/fetch
+function flattenCategories(cats: any[]): Category[] {
+  const result: Category[] = [];
+  for (const cat of cats) {
+    result.push(cat);
+    if (cat.children?.length) {
+      result.push(...flattenCategories(cat.children));
+    }
+  }
+  return result;
+}
+
 export function CategoriesSection() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,18 +69,6 @@ export function CategoriesSection() {
         const response = await fetch(`${API_URL}/categories`);
         if (!response.ok) throw new Error('Failed to fetch categories');
         const data = await response.json();
-
-        // Flatten categories from tree structure and get top-level ones
-        const flattenCategories = (cats: any[]): Category[] => {
-          const result: Category[] = [];
-          for (const cat of cats) {
-            result.push(cat);
-            if (cat.children?.length) {
-              result.push(...flattenCategories(cat.children));
-            }
-          }
-          return result;
-        };
 
         const allCategories = flattenCategories(data.data || []);
         // Filter to only show the 3 main categories we want

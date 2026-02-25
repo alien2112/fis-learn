@@ -30,6 +30,17 @@ export class CsrfGuard implements CanActivate {
       return true;
     }
 
+    // Check if the route is marked as @Public()
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    // Public routes (login, register, etc.) don't need CSRF protection
+    if (isPublic) {
+      return true;
+    }
+
     // If the request does not carry a cookie-based access token this is a
     // Bearer-only request (mobile, Postman, etc.) — skip CSRF check.
     if (!request.cookies?.accessToken) {

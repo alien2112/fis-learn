@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { ChatBubble } from '@/components/chatbot';
 import { CookieConsent } from '@/components/cookie-consent/CookieConsent';
 import { locales, type Locale } from '@/i18n';
+import { getSiteSettings } from '@/lib/api/site-settings';
 
 export default async function LocaleLayout({
   children,
@@ -18,14 +19,17 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  const messages = (await import(`../../../messages/${locale}.json`)).default;
+  const [messages, settings] = await Promise.all([
+    import(`../../../messages/${locale}.json`).then((m) => m.default),
+    getSiteSettings(),
+  ]);
   const isRTL = locale === 'ar';
 
   return (
     <div lang={locale} dir={isRTL ? 'rtl' : 'ltr'} className="flex min-h-screen flex-col">
       <NextIntlClientProvider locale={locale} messages={messages}>
         <AuthProvider>
-          <Header />
+          <Header logoUrl={settings.logo_url} />
           <main className="flex-1">{children}</main>
           <Footer />
           <ChatBubble />

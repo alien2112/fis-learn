@@ -79,6 +79,18 @@ export class CreateLessonDto {
   @IsInt()
   @Min(0)
   sortOrder?: number;
+
+  @ApiPropertyOptional({ example: 'https://youtube.com/watch?v=...' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  youtubeUrl?: string;
+
+  @ApiPropertyOptional({ example: 600, description: 'Duration in seconds' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  duration?: number;
 }
 
 export class UpdateLessonDto {
@@ -115,6 +127,18 @@ export class UpdateLessonDto {
   @IsInt()
   @Min(0)
   sortOrder?: number;
+
+  @ApiPropertyOptional({ example: 'https://youtube.com/watch?v=...' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  youtubeUrl?: string;
+
+  @ApiPropertyOptional({ example: 600, description: 'Duration in seconds' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  duration?: number;
 }
 
 export class AssignInstructorsDto {

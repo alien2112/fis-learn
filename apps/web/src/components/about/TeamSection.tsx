@@ -4,13 +4,24 @@ import { motion } from 'framer-motion';
 import { Linkedin, Twitter, Mail } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-export function TeamSection() {
+interface TeamImages {
+    sarah?: string;
+    michael?: string;
+    emily?: string;
+    david?: string;
+}
+
+interface TeamSectionProps {
+    teamImages?: TeamImages;
+}
+
+export function TeamSection({ teamImages }: TeamSectionProps) {
     const t = useTranslations('about.team');
     const team = [
-        { nameKey: 'sarah.name', roleKey: 'sarah.role', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1976&auto=format&fit=crop', bioKey: 'sarah.bio' },
-        { nameKey: 'michael.name', roleKey: 'michael.role', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070&auto=format&fit=crop', bioKey: 'michael.bio' },
-        { nameKey: 'emily.name', roleKey: 'emily.role', image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop', bioKey: 'emily.bio' },
-        { nameKey: 'david.name', roleKey: 'david.role', image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1974&auto=format&fit=crop', bioKey: 'david.bio' },
+        { nameKey: 'sarah.name', roleKey: 'sarah.role', image: teamImages?.sarah || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1976&auto=format&fit=crop', bioKey: 'sarah.bio' },
+        { nameKey: 'michael.name', roleKey: 'michael.role', image: teamImages?.michael || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070&auto=format&fit=crop', bioKey: 'michael.bio' },
+        { nameKey: 'emily.name', roleKey: 'emily.role', image: teamImages?.emily || 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop', bioKey: 'emily.bio' },
+        { nameKey: 'david.name', roleKey: 'david.role', image: teamImages?.david || 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1974&auto=format&fit=crop', bioKey: 'david.bio' },
     ];
 
     const companies = [
@@ -68,7 +79,7 @@ export function TeamSection() {
                 {/* Alumni/Partners Marquee */}
                 <div className="border-t border-border/50 pt-16">
                     <p className="text-center text-sm font-medium text-muted-foreground uppercase tracking-widest mb-10">
-                        Ex-Alumni Companies
+                        {t('alumniTitle')}
                     </p>
                     <div className="flex overflow-hidden [mask-image:linear-gradient(to_right,transparent,black,transparent)]">
                         <motion.div

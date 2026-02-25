@@ -713,13 +713,30 @@ export class CoursesService {
       sortOrder = (maxOrder._max.sortOrder || 0) + 1;
     }
 
+    // Handle YouTube URL - create Material if provided
+    let materialId = dto.materialId;
+    if (dto.youtubeUrl && !materialId) {
+      const material = await this.prisma.material.create({
+        data: {
+          type: 'VIDEO',
+          title: dto.title,
+          description: dto.description,
+          youtubeUrl: dto.youtubeUrl,
+          youtubeEnabled: true,
+          duration: dto.duration,
+          uploadedById: userId,
+        },
+      });
+      materialId = material.id;
+    }
+
     const lesson = await this.prisma.lesson.create({
       data: {
         sectionId,
         title: dto.title,
         description: dto.description,
         contentType: dto.contentType,
-        materialId: dto.materialId,
+        materialId,
         isFreePreview: dto.isFreePreview || false,
         sortOrder,
       },
@@ -734,7 +751,10 @@ export class CoursesService {
   async updateLesson(lessonId: string, dto: UpdateLessonDto, userId: string, userRole: string) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
-      include: { section: { include: { course: true } } },
+      include: {
+        section: { include: { course: true } },
+        material: true,
+      },
     });
 
     if (!lesson) {
@@ -743,9 +763,48 @@ export class CoursesService {
 
     await this.verifyCourseOwnership(lesson.section.courseId, userId, userRole);
 
+    // Handle YouTube URL - create or update Material
+    let materialId = dto.materialId;
+    if (dto.youtubeUrl !== undefined) {
+      if (lesson.material && lesson.materialId) {
+        // Update existing material
+        await this.prisma.material.update({
+          where: { id: lesson.materialId },
+          data: {
+            youtubeUrl: dto.youtubeUrl || null,
+            youtubeEnabled: !!dto.youtubeUrl,
+            duration: dto.duration,
+            title: dto.title || lesson.material.title,
+            description: dto.description || lesson.material.description,
+          },
+        });
+        materialId = lesson.materialId;
+      } else if (dto.youtubeUrl) {
+        // Create new material
+        const material = await this.prisma.material.create({
+          data: {
+            type: 'VIDEO',
+            title: dto.title || lesson.title,
+            description: dto.description || lesson.description,
+            youtubeUrl: dto.youtubeUrl,
+            youtubeEnabled: true,
+            duration: dto.duration,
+            uploadedById: userId,
+          },
+        });
+        materialId = material.id;
+      }
+    }
+
+    // Remove youtubeUrl and duration from dto as they're not Lesson fields
+    const { youtubeUrl, duration, ...lessonData } = dto;
+
     const updatedLesson = await this.prisma.lesson.update({
       where: { id: lessonId },
-      data: dto,
+      data: {
+        ...lessonData,
+        ...(materialId !== undefined && { materialId }),
+      },
       include: {
         material: true,
       },

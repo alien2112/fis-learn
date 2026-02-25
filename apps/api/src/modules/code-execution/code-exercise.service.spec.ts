@@ -4,6 +4,8 @@ import { CodeExerciseService } from './code-exercise.service';
 import { CodeExecutionService } from './code-execution.service';
 import { CODE_EXECUTION_PROVIDER } from '../../common/external-services';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ProgressService } from '../courses/progress.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 describe('CodeExerciseService', () => {
   let service: CodeExerciseService;
@@ -124,12 +126,22 @@ describe('CodeExerciseService', () => {
       trackExecution: jest.fn().mockResolvedValue(undefined),
     };
 
+    const mockProgressService = {
+      updateLessonProgress: jest.fn().mockResolvedValue(undefined),
+      getProgress: jest.fn().mockResolvedValue(null),
+    };
+    const mockNotificationsService = {
+      send: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CodeExerciseService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: CODE_EXECUTION_PROVIDER, useValue: mockProvider },
         { provide: CodeExecutionService, useValue: mockCodeExecutionService },
+        { provide: ProgressService, useValue: mockProgressService },
+        { provide: NotificationsService, useValue: mockNotificationsService },
       ],
     }).compile();
 

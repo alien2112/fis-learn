@@ -29,7 +29,7 @@ export class ProgressService {
    * Unified lesson completion method
    * This is the ONLY method that should create/update LessonProgress records
    * and trigger enrollment progress updates.
-   * 
+   *
    * @param userId - The student completing the lesson
    * @param lessonId - The lesson being completed
    * @param courseId - The course containing the lesson
@@ -43,10 +43,15 @@ export class ProgressService {
     completionSource: 'VIDEO_COMPLETE' | 'CODE_EXERCISE' | 'QUIZ_PASS' | 'MANUAL' | 'ASSIGNMENT',
     autoCompleted: boolean = false,
   ): Promise<{ success: boolean; alreadyCompleted: boolean; courseCompleted?: boolean }> {
-    // Verify enrollment is active
-    const enrollment = await this.prisma.enrollment.findUnique({
-      where: { userId_courseId: { userId, courseId } },
-    });
+    // Run enrollment check and existing-progress lookup in parallel (2 → 1 round-trip)
+    const [enrollment, existingProgress] = await Promise.all([
+      this.prisma.enrollment.findUnique({
+        where: { userId_courseId: { userId, courseId } },
+      }),
+      this.prisma.lessonProgress.findUnique({
+        where: { userId_lessonId: { userId, lessonId } },
+      }),
+    ]);
 
     if (!enrollment || enrollment.status !== EnrollmentStatus.ACTIVE) {
       this.logger.warn(
@@ -55,34 +60,67 @@ export class ProgressService {
       return { success: false, alreadyCompleted: false };
     }
 
-    // Check if already completed
-    const existingProgress = await this.prisma.lessonProgress.findUnique({
-      where: { userId_lessonId: { userId, lessonId } },
-    });
-
     const alreadyCompleted = !!existingProgress;
 
     // Create or update lesson progress
     await this.prisma.lessonProgress.upsert({
       where: { userId_lessonId: { userId, lessonId } },
-      create: {
-        userId,
-        lessonId,
-        completedAt: new Date(),
-      },
+      create: { userId, lessonId, completedAt: new Date() },
       update: {
         // Keep original completion date if already completed
-        completedAt: existingProgress?.completedAt || new Date(),
+        completedAt: existingProgress?.completedAt ?? new Date(),
       },
     });
 
-    // Update enrollment progress percentage
-    await this.updateEnrollmentProgress(courseId, userId);
+    // Fetch total and completed lesson counts in parallel — shared by both
+    // progress-percent update AND course-completion check (was 4 serial queries before).
+    const [totalLessons, completedLessons] = await Promise.all([
+      this.prisma.lesson.count({ where: { section: { courseId } } }),
+      this.prisma.lessonProgress.count({
+        where: { userId, lesson: { section: { courseId } } },
+      }),
+    ]);
 
-    // Check if course is now complete
-    const courseCompleted = await this.checkAndCompleteCourse(courseId, userId);
+    const progressPercent =
+      totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    const isCourseComplete = totalLessons > 0 && completedLessons >= totalLessons;
 
-    // Log the completion source for analytics
+    // Single enrollment update covering both progress and (conditional) completion
+    const updatedEnrollment = await this.prisma.enrollment.update({
+      where: { userId_courseId: { userId, courseId } },
+      data: {
+        progressPercent,
+        ...(isCourseComplete && {
+          status: EnrollmentStatus.COMPLETED,
+          completedAt: new Date(),
+          progressPercent: 100,
+        }),
+      },
+    });
+
+    this.logger.log(
+      `Updated enrollment progress for user ${userId} in course ${courseId}: ${progressPercent}%`,
+    );
+
+    let courseCompleted = false;
+    if (isCourseComplete) {
+      courseCompleted = true;
+      const course = await this.prisma.course.findUnique({
+        where: { id: courseId },
+        select: { title: true },
+      });
+      if (course) {
+        await this.notificationsService.create(
+          userId,
+          NotificationType.COURSE_COMPLETED,
+          'Course Completed!',
+          `Congratulations! You've completed "${course.title}".`,
+          { courseId, completedAt: updatedEnrollment.completedAt },
+        );
+      }
+      this.logger.log(`Course ${courseId} completed by user ${userId}`);
+    }
+
     this.logger.log(
       `Lesson ${lessonId} completed by user ${userId} via ${completionSource}${autoCompleted ? ' (auto)' : ''}`,
     );
@@ -124,86 +162,6 @@ export class ProgressService {
       totalRequired: exerciseIds.length,
       completedRequired: acceptedSubmissions.length,
     };
-  }
-
-  /**
-   * Update enrollment progress percentage based on completed lessons
-   */
-  private async updateEnrollmentProgress(courseId: string, userId: string): Promise<void> {
-    const totalLessons = await this.prisma.lesson.count({
-      where: { section: { courseId } },
-    });
-
-    const completedLessons = await this.prisma.lessonProgress.count({
-      where: {
-        userId,
-        lesson: { section: { courseId } },
-      },
-    });
-
-    const progressPercent = totalLessons > 0
-      ? Math.round((completedLessons / totalLessons) * 100)
-      : 0;
-
-    await this.prisma.enrollment.update({
-      where: { userId_courseId: { userId, courseId } },
-      data: { progressPercent },
-    });
-
-    this.logger.log(
-      `Updated enrollment progress for user ${userId} in course ${courseId}: ${progressPercent}%`,
-    );
-  }
-
-  /**
-   * Check if all lessons are complete and mark course as completed
-   */
-  private async checkAndCompleteCourse(
-    courseId: string,
-    userId: string,
-  ): Promise<boolean> {
-    const totalLessons = await this.prisma.lesson.count({
-      where: { section: { courseId } },
-    });
-
-    const completedLessons = await this.prisma.lessonProgress.count({
-      where: {
-        userId,
-        lesson: { section: { courseId } },
-      },
-    });
-
-    if (completedLessons >= totalLessons && totalLessons > 0) {
-      const enrollment = await this.prisma.enrollment.update({
-        where: { userId_courseId: { userId, courseId } },
-        data: {
-          status: EnrollmentStatus.COMPLETED,
-          completedAt: new Date(),
-          progressPercent: 100,
-        },
-      });
-
-      // Send course completion notification
-      const course = await this.prisma.course.findUnique({
-        where: { id: courseId },
-        select: { title: true },
-      });
-
-      if (course) {
-        await this.notificationsService.create(
-          userId,
-          NotificationType.COURSE_COMPLETED,
-          'Course Completed!',
-          `Congratulations! You've completed "${course.title}".`,
-          { courseId, completedAt: enrollment.completedAt },
-        );
-      }
-
-      this.logger.log(`Course ${courseId} completed by user ${userId}`);
-      return true;
-    }
-
-    return false;
   }
 
   /**

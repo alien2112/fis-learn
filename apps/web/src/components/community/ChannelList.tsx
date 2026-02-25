@@ -2,12 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { CommunityChannel } from '@/lib/api/community';
-
-const channelLabels: Record<CommunityChannel['type'], string> = {
-  ANNOUNCEMENTS: 'Announcements',
-  QA: 'Q&A',
-  DISCUSSION: 'Discussion',
-};
+import { useTranslations, useLocale } from 'next-intl';
 
 export function ChannelList({
   channels,
@@ -18,6 +13,10 @@ export function ChannelList({
   activeId?: string;
   onSelect: (channel: CommunityChannel) => void;
 }) {
+  const t = useTranslations('community');
+  const locale = useLocale();
+  const isRTL = locale === 'ar';
+
   return (
     <div className="space-y-2">
       {channels.map((channel) => {
@@ -27,14 +26,15 @@ export function ChannelList({
             key={channel.id}
             type="button"
             className={cn(
-              'w-full text-left rounded-lg border px-3 py-2 transition-colors',
+              'w-full rounded-lg border px-3 py-2 transition-colors',
+              isRTL ? 'text-right' : 'text-left',
               isActive
                 ? 'border-primary bg-primary/10 text-primary'
                 : 'border-muted text-muted-foreground hover:border-primary/40 hover:text-foreground'
             )}
             onClick={() => onSelect(channel)}
           >
-            <div className="text-sm font-semibold">{channelLabels[channel.type] || channel.name}</div>
+            <div className="text-sm font-semibold">{t(`channel_types.${channel.type.toLowerCase()}`) || channel.name}</div>
             <div className="text-xs text-muted-foreground">{channel.name}</div>
           </button>
         );

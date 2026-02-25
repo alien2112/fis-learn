@@ -64,27 +64,16 @@ export class NotificationsService {
 
     this.logger.log(`Creating bulk notifications for ${userIds.length} users, type: ${type}`);
 
-    // Create notifications in a transaction to get the created records
-    const notifications = await this.prisma.$transaction(
-      userIds.map((userId) =>
-        this.prisma.notification.create({
-          data: { userId, type, title, body, data },
-        }),
-      ),
-    );
+    // Single batch INSERT instead of N individual INSERTs in a transaction.
+    // createMany generates one SQL statement regardless of userIds.length.
+    await this.prisma.notification.createMany({
+      data: userIds.map((userId) => ({ userId, type, title, body, data })),
+    });
 
-    // Batch update unread counts using Promise.all with batching to prevent memory issues
-    const BATCH_SIZE = 100;
-    for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
-      const batch = userIds.slice(i, i + BATCH_SIZE);
-      await Promise.all(
-        batch.map(async (userId) =>
-          this.gateway?.sendUnreadCount(userId, await this.getUnreadCount(userId)),
-        ),
-      );
-    }
+    // For bulk sends we skip per-user DB COUNT queries (would be N extra round-trips).
+    // Connected clients will sync their badge on next focus / reconnect.
 
-    return { count: notifications.length, notifications };
+    return { count: userIds.length, notifications: [] };
   }
 
   async getNotifications(
@@ -167,17 +156,12 @@ export class NotificationsService {
   }
 
   private async getOrCreatePreferences(userId: string) {
-    let prefs = await this.prisma.notificationPreference.findUnique({
+    // Single upsert instead of findUnique + conditional create (2 → 1 query).
+    return this.prisma.notificationPreference.upsert({
       where: { userId },
+      create: { userId },
+      update: {},
     });
-
-    if (!prefs) {
-      prefs = await this.prisma.notificationPreference.create({
-        data: { userId },
-      });
-    }
-
-    return prefs;
   }
 
   private async sendEmailNotification(

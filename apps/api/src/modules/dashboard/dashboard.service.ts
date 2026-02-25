@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { Role, UserStatus, CourseStatus, EnrollmentStatus } from '@prisma/client';
+import { UserStatus, CourseStatus, EnrollmentStatus } from '@prisma/client';
 
 @Injectable()
 export class DashboardService {
@@ -116,55 +116,60 @@ export class DashboardService {
   }
 
   async getEnrollmentTrend(months: number = 6) {
-    const results = [];
     const now = new Date();
+    // First day of the window (N months ago)
+    const cutoff = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
 
-    for (let i = months - 1; i >= 0; i--) {
-      const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const endDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+    // Single GROUP BY query instead of N separate COUNT queries.
+    type TrendRow = { yr: number; mo: number; count: bigint };
+    const rows = await this.prisma.$queryRaw<TrendRow[]>`
+      SELECT
+        EXTRACT(YEAR  FROM enrolled_at)::int AS yr,
+        EXTRACT(MONTH FROM enrolled_at)::int AS mo,
+        COUNT(*)::bigint                     AS count
+      FROM enrollments
+      WHERE enrolled_at >= ${cutoff}
+      GROUP BY yr, mo
+      ORDER BY yr ASC, mo ASC
+    `;
 
-      const count = await this.prisma.enrollment.count({
-        where: {
-          enrolledAt: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-      });
+    const resultMap = new Map(rows.map((r) => [`${r.yr}-${r.mo}`, Number(r.count)]));
 
-      results.push({
-        month: startDate.toLocaleString('default', { month: 'short', year: 'numeric' }),
-        enrollments: count,
-      });
-    }
-
-    return results;
+    return Array.from({ length: months }, (_, idx) => {
+      const i = months - 1 - idx;
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+      const label = d.toLocaleString('default', { month: 'short', year: 'numeric' });
+      return { month: label, enrollments: resultMap.get(key) ?? 0 };
+    });
   }
 
   async getUserGrowthTrend(months: number = 6) {
-    const results = [];
     const now = new Date();
+    const cutoff = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
 
-    for (let i = months - 1; i >= 0; i--) {
-      const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const endDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+    // Single GROUP BY query instead of N separate COUNT queries.
+    type TrendRow = { yr: number; mo: number; count: bigint };
+    const rows = await this.prisma.$queryRaw<TrendRow[]>`
+      SELECT
+        EXTRACT(YEAR  FROM created_at)::int AS yr,
+        EXTRACT(MONTH FROM created_at)::int AS mo,
+        COUNT(*)::bigint                    AS count
+      FROM users
+      WHERE created_at >= ${cutoff}
+      GROUP BY yr, mo
+      ORDER BY yr ASC, mo ASC
+    `;
 
-      const count = await this.prisma.user.count({
-        where: {
-          createdAt: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-      });
+    const resultMap = new Map(rows.map((r) => [`${r.yr}-${r.mo}`, Number(r.count)]));
 
-      results.push({
-        month: startDate.toLocaleString('default', { month: 'short', year: 'numeric' }),
-        users: count,
-      });
-    }
-
-    return results;
+    return Array.from({ length: months }, (_, idx) => {
+      const i = months - 1 - idx;
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+      const label = d.toLocaleString('default', { month: 'short', year: 'numeric' });
+      return { month: label, users: resultMap.get(key) ?? 0 };
+    });
   }
 
   async getCourseStats() {
@@ -478,54 +483,39 @@ export class DashboardService {
   }
 
   async getTopInstructors(limit: number = 5) {
-    // Get courses with their instructors and enrollment counts
-    const courses = await this.prisma.course.findMany({
-      where: {
-        status: CourseStatus.PUBLISHED,
-        instructors: { some: {} }, // Has at least one instructor
-      },
-      select: {
-        id: true,
-        instructors: { select: { userId: true } },
-        _count: { select: { enrollments: true } },
-      },
-    });
+    // Single SQL aggregation instead of fetching all courses into memory,
+    // grouping in JavaScript, then making a second DB round-trip.
+    type TopRow = {
+      user_id: string;
+      name: string;
+      avatar_url: string | null;
+      course_count: bigint;
+      student_count: bigint;
+    };
 
-    // Group by instructor
-    const instructorMap = new Map<string, { courses: number; students: number }>();
-    courses.forEach((course) => {
-      course.instructors.forEach((instructor) => {
-        const existing = instructorMap.get(instructor.userId) || { courses: 0, students: 0 };
-        instructorMap.set(instructor.userId, {
-          courses: existing.courses + 1,
-          students: existing.students + course._count.enrollments,
-        });
-      });
-    });
+    const rows = await this.prisma.$queryRaw<TopRow[]>`
+      SELECT
+        u.id          AS user_id,
+        u.name,
+        u.avatar_url,
+        COUNT(DISTINCT ci.course_id)::bigint AS course_count,
+        COUNT(DISTINCT e.id)::bigint         AS student_count
+      FROM course_instructors ci
+      JOIN courses     c  ON ci.course_id = c.id AND c.status = 'PUBLISHED' AND c.deleted_at IS NULL
+      JOIN users       u  ON ci.user_id   = u.id
+      LEFT JOIN enrollments e ON e.course_id = c.id
+      GROUP BY u.id, u.name, u.avatar_url
+      ORDER BY student_count DESC
+      LIMIT ${limit}
+    `;
 
-    // Get instructor details
-    const instructors = await this.prisma.user.findMany({
-      where: {
-        role: Role.INSTRUCTOR,
-        id: { in: Array.from(instructorMap.keys()) },
-      },
-      select: { id: true, name: true, avatarUrl: true },
-    });
-
-    const instructorStats = instructors.map((instructor) => {
-      const stats = instructorMap.get(instructor.id) || { courses: 0, students: 0 };
-      return {
-        id: instructor.id,
-        name: instructor.name,
-        avatarUrl: instructor.avatarUrl,
-        courses: stats.courses,
-        students: stats.students,
-        rating: 0,
-      };
-    });
-
-    return instructorStats
-      .sort((a, b) => b.students - a.students)
-      .slice(0, limit);
+    return rows.map((r) => ({
+      id: r.user_id,
+      name: r.name,
+      avatarUrl: r.avatar_url,
+      courses: Number(r.course_count),
+      students: Number(r.student_count),
+      rating: 0,
+    }));
   }
 }

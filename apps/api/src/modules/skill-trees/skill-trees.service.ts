@@ -83,25 +83,26 @@ export class SkillTreesService {
 
   async create(data: Omit<SkillTree, 'id' | 'createdAt' | 'updatedAt'>, userId: string) {
     const { nodes, createdBy, ...treeData } = data;
+    const safeNodes = Array.isArray(nodes) ? nodes : [];
     
     return this.prisma.skillTree.create({
       data: {
         ...treeData,
         createdById: userId,
-        nodes: {
-          create: nodes.map(node => ({
+        nodes: safeNodes.length > 0 ? {
+          create: safeNodes.map(node => ({
             id: node.id,
             name: node.name,
-            description: node.description,
-            icon: node.icon,
-            positionX: node.position.x,
-            positionY: node.position.y,
-            prerequisites: JSON.stringify(node.prerequisites),
-            unlockConditions: JSON.stringify(node.unlockConditions),
-            resources: JSON.stringify(node.resources),
-            metadata: JSON.stringify(node.metadata),
+            description: node.description ?? '',
+            icon: node.icon ?? '📚',
+            positionX: node.position?.x ?? (node as any).positionX ?? 500,
+            positionY: node.position?.y ?? (node as any).positionY ?? 300,
+            prerequisites: JSON.stringify(node.prerequisites ?? []),
+            unlockConditions: JSON.stringify(node.unlockConditions ?? {}),
+            resources: JSON.stringify(node.resources ?? {}),
+            metadata: JSON.stringify(node.metadata ?? {}),
           })),
-        },
+        } : undefined,
       },
       include: {
         nodes: true,
@@ -116,7 +117,7 @@ export class SkillTreesService {
     const updateData: any = { ...treeData };
     
     // Handle nodes update if provided
-    if (nodes) {
+    if (nodes && Array.isArray(nodes)) {
       // Delete existing nodes and create new ones
       await this.prisma.skillNode.deleteMany({
         where: { skillTreeId: id },
@@ -126,14 +127,14 @@ export class SkillTreesService {
         create: nodes.map(node => ({
           id: node.id,
           name: node.name,
-          description: node.description,
-          icon: node.icon,
-          positionX: node.position.x,
-          positionY: node.position.y,
-          prerequisites: JSON.stringify(node.prerequisites),
-          unlockConditions: JSON.stringify(node.unlockConditions),
-          resources: JSON.stringify(node.resources),
-          metadata: JSON.stringify(node.metadata),
+          description: node.description ?? '',
+          icon: node.icon ?? '📚',
+          positionX: node.position?.x ?? (node as any).positionX ?? 500,
+          positionY: node.position?.y ?? (node as any).positionY ?? 300,
+          prerequisites: JSON.stringify(node.prerequisites ?? []),
+          unlockConditions: JSON.stringify(node.unlockConditions ?? {}),
+          resources: JSON.stringify(node.resources ?? {}),
+          metadata: JSON.stringify(node.metadata ?? {}),
         })),
       };
     }

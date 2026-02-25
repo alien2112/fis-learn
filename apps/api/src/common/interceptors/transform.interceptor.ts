@@ -22,6 +22,12 @@ export class TransformInterceptor<T>
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<Response<T>> {
+    // Only transform HTTP responses; WebSocket / RPC contexts must pass through
+    // unchanged so that gateway ACK payloads (e.g. { ok: true }) are not wrapped.
+    if (context.getType() !== 'http') {
+      return next.handle();
+    }
+
     const ctx = context.switchToHttp();
     const response = ctx.getResponse();
 

@@ -28,7 +28,6 @@ export function ChatBubble() {
         className={cn(
           'fixed bottom-4 right-4 z-40 h-14 w-14 rounded-full shadow-lg transition-all duration-300',
           'hover:scale-110 hover:shadow-xl',
-          !hasOpened && 'animate-pulse',
           isOpen && 'scale-0 opacity-0'
         )}
         size="icon"

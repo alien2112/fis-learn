@@ -14,6 +14,7 @@ interface Post {
     category: { name: string };
     publishedAt: string;
     readTime: string;
+    coverImage?: string;
 }
 
 interface BlogCardProps {
@@ -25,8 +26,15 @@ export function BlogCard({ post }: BlogCardProps) {
         <Link href={`/blog/${post.slug}`} className="group h-full block">
             <GlassCard hoverEffect className="h-full flex flex-col overflow-hidden border-border/70 dark:bg-card/30 bg-white/70">
                 <div className="aspect-[16/9] w-full bg-muted relative overflow-hidden">
-                    {/* Placeholder gradient/pattern */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-secondary/80 to-muted transition-transform duration-500 group-hover:scale-105" />
+                    {post.coverImage ? (
+                      <img
+                        src={post.coverImage}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-tr from-secondary/80 to-muted transition-transform duration-500 group-hover:scale-105" />
+                    )}
 
                     {/* Decorative icon or abstract shape */}
                     <div className="absolute bottom-4 right-4 p-2 bg-background/80 backdrop-blur-sm rounded-lg opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">

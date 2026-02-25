@@ -3,12 +3,19 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, PlayCircle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/glass-card';
 import { useTranslations } from 'next-intl';
+import { HERO_LEARNER_AVATARS, DEFAULT_HERO_IMAGE } from '@/lib/placeholder-images';
 
-export function HeroSection() {
+interface HeroSectionProps {
+  heroImageUrl?: string;
+}
+
+export function HeroSection({ heroImageUrl }: HeroSectionProps) {
   const t = useTranslations('hero');
+  const heroImage = heroImageUrl || DEFAULT_HERO_IMAGE;
 
   return (
     <section className="relative w-full overflow-hidden bg-background pt-32 pb-20 lg:pt-48 lg:pb-32">
@@ -90,9 +97,9 @@ export function HeroSection() {
               className="pt-6 flex items-center gap-6"
             >
               <div className="flex -space-x-4">
-                {[1, 2, 3, 4].map((i) => (
+                {HERO_LEARNER_AVATARS.map((avatar, i) => (
                   <div key={i} className="w-12 h-12 rounded-full border-4 border-background bg-muted flex items-center justify-center overflow-hidden shadow-sm">
-                    <img src={`https://i.pravatar.cc/100?img=${i + 15}`} alt="User" />
+                    <Image src={avatar} alt="" width={48} height={48} className="w-full h-full object-cover" />
                   </div>
                 ))}
               </div>
@@ -115,7 +122,7 @@ export function HeroSection() {
             {/* Main Floating Card */}
             <div className="relative z-10 w-full lg:w-[550px] aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl border-8 border-background/50 backdrop-blur-sm">
               <img
-                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop"
+                src={heroImage}
                 alt="Students learning"
                 className="w-full h-full object-cover"
               />
@@ -167,9 +174,9 @@ export function HeroSection() {
             >
               <GlassCard className="p-4 flex items-center gap-3 !bg-white/90 dark:!bg-black/80 backdrop-blur-xl border-none shadow-xl rounded-2xl">
                 <div className="flex -space-x-2">
-                  {[1, 2, 3].map(i => (
+                  {HERO_LEARNER_AVATARS.slice(0, 3).map((avatar, i) => (
                     <div key={i} className="w-8 h-8 rounded-full bg-muted border-2 border-white dark:border-black overflow-hidden">
-                      <img src={`https://i.pravatar.cc/100?img=${i + 5}`} />
+                      <Image src={avatar} alt="" width={32} height={32} className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>

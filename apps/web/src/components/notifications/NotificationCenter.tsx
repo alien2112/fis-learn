@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Socket } from 'socket.io-client';
 import { X, CheckCheck } from 'lucide-react';
 import { NotificationItem, Notification } from './NotificationItem';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011/api/v1';
 
@@ -20,6 +21,7 @@ export function NotificationCenter({
   onMarkAsRead,
   onMarkAllAsRead,
 }: NotificationCenterProps) {
+  const t = useTranslations('notifications');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -73,7 +75,7 @@ export function NotificationCenter({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClose]);
 
-  const handleMarkAsRead = async (id: string) => {
+  const handleMarkAsRead = useCallback(async (id: string) => {
     try {
       await fetch(`${API_URL}/notifications/${id}/read`, {
         method: 'PATCH',
@@ -86,9 +88,9 @@ export function NotificationCenter({
     } catch {
       // Silent fail
     }
-  };
+  }, [onMarkAsRead]);
 
-  const handleMarkAllAsRead = async () => {
+  const handleMarkAllAsRead = useCallback(async () => {
     try {
       await fetch(`${API_URL}/notifications/read-all`, {
         method: 'POST',
@@ -99,9 +101,9 @@ export function NotificationCenter({
     } catch {
       // Silent fail
     }
-  };
+  }, [onMarkAllAsRead]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     try {
       await fetch(`${API_URL}/notifications/${id}`, {
         method: 'DELETE',
@@ -111,7 +113,7 @@ export function NotificationCenter({
     } catch {
       // Silent fail
     }
-  };
+  }, []);
 
   const loadMore = () => {
     const nextPage = page + 1;
@@ -126,13 +128,13 @@ export function NotificationCenter({
     >
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-          Notifications
+          {t('title')}
         </h3>
         <div className="flex items-center gap-2">
           <button
             onClick={handleMarkAllAsRead}
             className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-            title="Mark all as read"
+            title={t('markAllRead')}
           >
             <CheckCheck className="w-4 h-4" />
           </button>
@@ -148,7 +150,7 @@ export function NotificationCenter({
       <div className="overflow-y-auto max-h-[400px]">
         {notifications.length === 0 ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-            No notifications yet
+            {t('noNotifications')}
           </div>
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -168,13 +170,13 @@ export function NotificationCenter({
             onClick={loadMore}
             className="w-full py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
-            Load more
+            {t('loadMore')}
           </button>
         )}
 
         {loading && (
           <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-            Loading...
+            {t('loading')}
           </div>
         )}
       </div>

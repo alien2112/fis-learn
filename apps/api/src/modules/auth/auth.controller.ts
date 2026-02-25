@@ -47,26 +47,32 @@ export class AuthController {
   }
 
   private setAuthCookies(res: Response, tokens: TokenResponse) {
+    // Force secure=false and sameSite=lax for IP-based HTTP access
+    const isSecure = false;
+    const sameSiteMode = 'lax';
+    // 10 years in ms (tokens configured to not expire)
+    const maxAgeMs = 10 * 365.25 * 24 * 60 * 60 * 1000;
+
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: this.isProduction,
-      sameSite: this.isProduction ? 'strict' : 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes (matches JWT expiry)
+      secure: isSecure,
+      sameSite: sameSiteMode,
+      maxAge: maxAgeMs,
       path: '/',
     });
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: this.isProduction,
-      sameSite: this.isProduction ? 'strict' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (matches refresh expiry)
+      secure: isSecure,
+      sameSite: sameSiteMode,
+      maxAge: maxAgeMs,
       path: '/api/v1/auth', // Only sent to auth endpoints
     });
     // CSRF double-submit cookie (readable by JS, NOT httpOnly)
     res.cookie('csrf-token', randomBytes(32).toString('hex'), {
       httpOnly: false,
-      secure: this.isProduction,
-      sameSite: this.isProduction ? 'strict' : 'lax',
-      maxAge: 15 * 60 * 1000,
+      secure: isSecure,
+      sameSite: sameSiteMode,
+      maxAge: maxAgeMs,
       path: '/',
     });
   }

@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Search, MoreHorizontal, Plus, Filter, BookOpen, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { DEFAULT_COURSE_IMAGE } from '@/lib/placeholder-images';
 
 export default function CoursesPage() {
   const [query, setQuery] = useState<CourseQueryParams>({
@@ -129,16 +130,12 @@ export default function CoursesPage() {
                     <TableRow key={course.id}>
                       <TableCell>
                         <div className="flex items-center space-x-3">
-                          <div className="h-12 w-16 rounded bg-muted flex items-center justify-center">
-                            {course.coverImageUrl ? (
-                              <img
-                                src={course.coverImageUrl}
-                                alt={course.title}
-                                className="h-full w-full object-cover rounded"
-                              />
-                            ) : (
-                              <BookOpen className="h-6 w-6 text-muted-foreground" />
-                            )}
+                          <div className="h-12 w-16 rounded bg-muted flex items-center justify-center overflow-hidden">
+                            <img
+                              src={course.coverImageUrl ?? DEFAULT_COURSE_IMAGE}
+                              alt={course.title}
+                              className="h-full w-full object-cover rounded"
+                            />
                           </div>
                           <div>
                             <p className="font-medium">{course.title}</p>

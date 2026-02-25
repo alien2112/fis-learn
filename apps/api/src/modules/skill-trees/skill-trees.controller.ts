@@ -34,7 +34,9 @@ export class SkillTreesController {
   @Roles('SUPER_ADMIN', 'ADMIN', 'INSTRUCTOR')
   @ApiOperation({ summary: 'Create new skill tree' })
   async create(@Body() data: any, @GetUser() user: any) {
-    return this.skillTreesService.create(data, user.userId);
+    // JWT payload uses 'sub' as user id
+    const userId = user?.sub ?? user?.id ?? user?.userId;
+    return this.skillTreesService.create(data, userId);
   }
 
   @Put(':id')

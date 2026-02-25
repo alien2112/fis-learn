@@ -91,22 +91,62 @@ export class UsersService {
   }
 
   async findInstructors(query: UserQueryDto) {
-    const result = await this.findAll({ ...query, role: Role.INSTRUCTOR });
+    // Single query with instructorProfile included instead of findAll + separate profile fetch.
+    const { page = 1, limit = 10, search, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    const skip = (page - 1) * limit;
 
-    // Enhance with instructor profile data
-    const userIds = result.data.map((u) => u.id);
-    const profiles = await this.prisma.instructorProfile.findMany({
-      where: { userId: { in: userIds } },
-    });
+    const where: Prisma.UserWhereInput = {
+      deletedAt: null,
+      role: Role.INSTRUCTOR,
+    };
 
-    const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
-    result.data = result.data.map((user) => ({
-      ...user,
-      instructorProfile: profileMap.get(user.id) || null,
-    }));
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          avatarUrl: true,
+          role: true,
+          status: true,
+          locale: true,
+          timezone: true,
+          emailVerifiedAt: true,
+          lastLoginAt: true,
+          createdAt: true,
+          updatedAt: true,
+          instructorProfile: true,
+          _count: {
+            select: {
+              enrollments: true,
+              coursesCreated: true,
+            },
+          },
+        },
+        orderBy: { [sortBy as string]: sortOrder },
+        skip,
+        take: limit,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
 
-    return result;
+    return {
+      data: users,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findAdmins(query: UserQueryDto) {

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Menu, X, BookOpen, LayoutDashboard, Settings, Award, LogOut, User, ChevronDown } from 'lucide-react';
@@ -19,19 +19,28 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-export function Header() {
+interface HeaderProps {
+  logoUrl?: string;
+}
+
+export function Header({ logoUrl }: HeaderProps) {
   const t = useTranslations('navigation');
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isLoading, logout } = useAuth();
 
-  const publicNavLinks = [
+  const publicNavLinks = useMemo(() => [
     { href: '/', label: t('home') },
     { href: '/courses', label: t('courses') },
     { href: '/about', label: t('about') },
     { href: '/blog', label: t('blog') },
     { href: '/contact', label: t('contact') },
-  ];
+  ], [t]);
+
+  const handleMobileLogout = useCallback(() => {
+    logout();
+    setMobileMenuOpen(false);
+  }, [logout]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -40,11 +49,12 @@ export function Header() {
         <Link href="/" className="flex items-center gap-2">
           <div className="relative h-10 w-10">
             <Image
-              src="/logo.png"
+              src={logoUrl || '/logo.png'}
               alt={t('brandName')}
               fill
               className="object-contain"
               priority
+              unoptimized={!!(logoUrl && !logoUrl.startsWith('/'))}
             />
           </div>
           <span className="text-xl font-bold">{t('brandName')}</span>
@@ -86,26 +96,26 @@ export function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer">
                       <LayoutDashboard className="h-4 w-4" />
-                      {t('dashboard')}
+                      {t('studentDashboard')}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/my-courses" className="flex items-center gap-2 cursor-pointer">
                       <BookOpen className="h-4 w-4" />
-                      My Courses
+                      {t('myCourses')}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/assessments" className="flex items-center gap-2 cursor-pointer">
                       <Award className="h-4 w-4" />
-                      Assessments
+                      {t('assessments')}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/settings" className="flex items-center gap-2 cursor-pointer">
                       <Settings className="h-4 w-4" />
-                      Settings
+                      {t('settings')}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={logout} className="flex items-center gap-2 cursor-pointer text-red-600">
@@ -173,7 +183,7 @@ export function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <LayoutDashboard className="h-4 w-4" />
-                    {t('dashboard')}
+                    {t('studentDashboard')}
                   </Link>
                   <Link
                     href="/my-courses"
@@ -181,7 +191,7 @@ export function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <BookOpen className="h-4 w-4" />
-                    My Courses
+                    {t('myCourses')}
                   </Link>
                   <Link
                     href="/assessments"
@@ -189,7 +199,7 @@ export function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <Award className="h-4 w-4" />
-                    Assessments
+                    {t('assessments')}
                   </Link>
                   <div className="border-t my-2"></div>
                   <Link
@@ -198,10 +208,10 @@ export function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <Settings className="h-4 w-4" />
-                    Settings
+                    {t('settings')}
                   </Link>
                   <button
-                    onClick={() => { logout(); setMobileMenuOpen(false); }}
+                    onClick={handleMobileLogout}
                     className="flex items-center gap-2 px-2 py-2 text-sm font-medium text-red-600 hover:bg-accent rounded-md w-full"
                   >
                     <LogOut className="h-4 w-4" />

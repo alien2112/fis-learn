@@ -43,20 +43,18 @@ export class StreamingController {
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateStreamDto,
   ) {
-    const stream = await this.streamingService.createStream(
+    return this.streamingService.createStream(
       user.id,
       dto.courseId,
       dto.title,
       dto.scheduledAt,
     );
-    return { success: true, data: stream };
   }
 
   @Get('course/:courseId')
   @ApiOperation({ summary: 'List streams for a course' })
   async listStreams(@Param('courseId') courseId: string) {
-    const streams = await this.streamingService.listStreams(courseId);
-    return { success: true, data: streams };
+    return this.streamingService.listStreams(courseId);
   }
 
   @Get(':id')
@@ -67,8 +65,7 @@ export class StreamingController {
     @Req() req: Request,
   ) {
     const isInstructor = user.role === Role.ADMIN || user.role === Role.INSTRUCTOR;
-    const stream = await this.streamingService.getStream(id, user.id, isInstructor);
-    return { success: true, data: stream };
+    return this.streamingService.getStream(id, user.id, isInstructor);
   }
 
   @Patch(':id')
@@ -79,13 +76,7 @@ export class StreamingController {
     @Param('id') id: string,
     @Body() dto: UpdateStreamDto,
   ) {
-    const isAdmin = user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN;
-    const stream = await this.streamingService.updateStream(
-      id,
-      user.id,
-      dto,
-    );
-    return { success: true, data: stream };
+    return this.streamingService.updateStream(id, user.id, dto);
   }
 
   @Delete(':id')
@@ -97,7 +88,6 @@ export class StreamingController {
   ) {
     const isAdmin = user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN;
     await this.streamingService.deleteStream(id, user.id, isAdmin);
-    return { success: true };
   }
 
   // ============ TOKEN GENERATION ============
@@ -114,15 +104,12 @@ export class StreamingController {
       dto.role,
     );
     return {
-      success: true,
-      data: {
-        token,
-        appId: process.env.ZEGO_APP_ID,
-        userId: user.id,
-        userName: dto.userName,
-        roomId: dto.roomId,
-        role: dto.role,
-      },
+      token,
+      appId: process.env.ZEGO_APP_ID,
+      userId: user.id,
+      userName: dto.userName,
+      roomId: dto.roomId,
+      role: dto.role,
     };
   }
 
@@ -134,8 +121,7 @@ export class StreamingController {
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
   ) {
-    const viewer = await this.streamingService.joinStream(id, user.id);
-    return { success: true, data: viewer };
+    return this.streamingService.joinStream(id, user.id);
   }
 
   @Post(':id/leave')
@@ -145,21 +131,18 @@ export class StreamingController {
     @Param('id') id: string,
   ) {
     await this.streamingService.leaveStream(id, user.id);
-    return { success: true };
   }
 
   @Get('course/:courseId/upcoming')
   @ApiOperation({ summary: 'Get upcoming scheduled streams for a course' })
   async getUpcomingStreams(@Param('courseId') courseId: string) {
-    const streams = await this.streamingService.getUpcomingStreams(courseId);
-    return { success: true, data: streams };
+    return this.streamingService.getUpcomingStreams(courseId);
   }
 
   @Get('course/:courseId/recordings')
   @ApiOperation({ summary: 'Get recorded (ended) streams for a course' })
   async getRecordedStreams(@Param('courseId') courseId: string) {
-    const streams = await this.streamingService.getRecordedStreams(courseId);
-    return { success: true, data: streams };
+    return this.streamingService.getRecordedStreams(courseId);
   }
 
   @Post(':id/recording')
@@ -170,8 +153,7 @@ export class StreamingController {
     @Param('id') id: string,
     @Body('videoAssetId') videoAssetId: string,
   ) {
-    const result = await this.streamingService.saveRecording(id, user.id, videoAssetId);
-    return { success: true, data: result };
+    return this.streamingService.saveRecording(id, user.id, videoAssetId);
   }
 
   // ============ ADMIN ============
@@ -189,15 +171,15 @@ export class StreamingController {
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
     });
-    return { success: true, ...result };
+    // Return the streams array directly so client gets Stream[] via response.data.data
+    return result.data;
   }
 
   @Get('admin/stats')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Get streaming statistics (admin)' })
   async getStreamingStats() {
-    const stats = await this.streamingService.getStreamingStats();
-    return { success: true, data: stats };
+    return this.streamingService.getStreamingStats();
   }
 
   // ============ DISCOVERY ============
@@ -205,15 +187,13 @@ export class StreamingController {
   @Get('active')
   @ApiOperation({ summary: 'Get all currently active (live) streams' })
   async getActiveStreams() {
-    const streams = await this.streamingService.getActiveStreams();
-    return { success: true, data: streams };
+    return this.streamingService.getActiveStreams();
   }
 
   @Get('my-streams')
   @Roles(Role.ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Get streams created by current user' })
   async getMyStreams(@CurrentUser() user: AuthUser) {
-    const streams = await this.streamingService.getUserStreams(user.id);
-    return { success: true, data: streams };
+    return this.streamingService.getUserStreams(user.id);
   }
 }

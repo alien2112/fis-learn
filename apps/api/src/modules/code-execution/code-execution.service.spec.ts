@@ -6,8 +6,16 @@ import {
   CODE_EXECUTION_PROVIDER,
   CodeExecutionResult,
   DEFAULT_TIER_LIMITS,
+  ExecutionLimits,
 } from '../../common/external-services';
 import { PrismaService } from '../../prisma/prisma.service';
+
+/** Finite limits for FREE in tests (DEFAULT_TIER_LIMITS uses -1 = unlimited). */
+const FREE_TEST_LIMITS: ExecutionLimits = {
+  ...DEFAULT_TIER_LIMITS.FREE,
+  executionsPerHour: 10,
+  executionsPerDay: 500,
+};
 
 describe('CodeExecutionService', () => {
   let service: CodeExecutionService;
@@ -35,7 +43,9 @@ describe('CodeExecutionService', () => {
       executeWithTests: jest.fn().mockResolvedValue({ testsPassed: 1, totalTests: 1, testResults: [] }),
       getBatchTestResult: jest.fn().mockResolvedValue(null),
       getQueueStatus: jest.fn().mockResolvedValue({ queueLength: 0, averageWaitTime: 0, workersAvailable: 1 }),
-      getLimitsForTier: jest.fn((tier: string) => DEFAULT_TIER_LIMITS[tier] || DEFAULT_TIER_LIMITS.FREE),
+      getLimitsForTier: jest.fn((tier: string) =>
+        tier === 'FREE' ? FREE_TEST_LIMITS : (DEFAULT_TIER_LIMITS[tier] || DEFAULT_TIER_LIMITS.FREE),
+      ),
       checkRateLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 10 }),
       healthCheck: jest.fn().mockResolvedValue({ healthy: true, latency: 50 }),
     };
@@ -97,15 +107,12 @@ describe('CodeExecutionService', () => {
     });
 
     it('should block when daily limit is reached but hourly is not', async () => {
-      // Simulate reaching daily limit (50 for FREE) by inserting old timestamps
-      // that are within 24h but spread across multiple hours
+      // FREE_TEST_LIMITS: 500/day — insert 500 timestamps within 24h, spread across hours
       const history: number[] = [];
       const now = Date.now();
-      for (let i = 0; i < 50; i++) {
-        // Spread across 5 hours ago so they pass the hourly check individually
+      for (let i = 0; i < 500; i++) {
         history.push(now - 5 * 3_600_000 + i * 100);
       }
-      // Directly set history (white-box test for the sliding window)
       (service as any).executionHistory.set('user-1', history);
 
       const result = await service.checkRateLimit('user-1', 'FREE');
@@ -138,15 +145,15 @@ describe('CodeExecutionService', () => {
     });
 
     it('should use the tighter of hourly and daily remaining', async () => {
-      // BASIC: 100/hour, 500/day — add 98 executions
-      for (let i = 0; i < 98; i++) {
+      // FREE_TEST_LIMITS: 10/hour, 500/day — add 8 executions so remaining = 2
+      for (let i = 0; i < 8; i++) {
         await service.trackExecution('user-1');
       }
 
-      const result = await service.checkRateLimit('user-1', 'BASIC');
+      const result = await service.checkRateLimit('user-1', 'FREE');
 
       expect(result.allowed).toBe(true);
-      expect(result.remaining).toBe(2); // min(100-98, 500-98) = 2
+      expect(result.remaining).toBe(2); // min(10-8, 500-8) = 2
     });
 
     it('should return correct resetAt for hourly block', async () => {
@@ -197,8 +204,8 @@ describe('CodeExecutionService', () => {
     });
 
     it('should reject source code that exceeds the tier code-size limit', async () => {
-      // FREE maxCodeSize = 10000
-      const oversized = 'x'.repeat(10001);
+      // FREE maxCodeSize = 50000
+      const oversized = 'x'.repeat(50001);
 
       const result = await service.execute('user-1', {
         sourceCode: oversized,
@@ -211,8 +218,8 @@ describe('CodeExecutionService', () => {
     });
 
     it('should reject stdin that exceeds the tier stdin-size limit', async () => {
-      // FREE maxStdinSize = 5000
-      const oversizedStdin = 'x'.repeat(5001);
+      // FREE maxStdinSize = 20000
+      const oversizedStdin = 'x'.repeat(20001);
 
       const result = await service.execute('user-1', {
         sourceCode: 'print("Hello")',

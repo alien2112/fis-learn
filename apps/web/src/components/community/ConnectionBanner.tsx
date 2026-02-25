@@ -1,8 +1,10 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 export function ConnectionBanner({ status }: { status: 'connected' | 'connecting' | 'disconnected' }) {
+  const t = useTranslations('community');
   if (status === 'connected') return null;
 
   return (
@@ -15,7 +17,7 @@ export function ConnectionBanner({ status }: { status: 'connected' | 'connecting
       )}
       role="status"
     >
-      {status === 'connecting' ? 'Reconnecting to the community...' : 'Connection lost. Trying to reconnect.'}
+      {status === 'connecting' ? t('connection_reconnecting') : t('connection_lost')}
     </div>
   );
 }

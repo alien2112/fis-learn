@@ -6,23 +6,33 @@ import { Quote, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 
-export function TestimonialSection() {
+interface TestimonialAvatars {
+  alex?: string;
+  maria?: string;
+  david?: string;
+}
+
+interface TestimonialSectionProps {
+  testimonialAvatars?: TestimonialAvatars;
+}
+
+export function TestimonialSection({ testimonialAvatars }: TestimonialSectionProps) {
   const t = useTranslations('home.testimonials');
 
   const testimonials = [
     {
       key: 'alex',
-      avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=1887&auto=format&fit=crop",
+      avatar: testimonialAvatars?.alex || "https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=1887&auto=format&fit=crop",
       rating: 5
     },
     {
       key: 'maria',
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1887&auto=format&fit=crop",
+      avatar: testimonialAvatars?.maria || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1887&auto=format&fit=crop",
       rating: 5
     },
     {
       key: 'david',
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1887&auto=format&fit=crop",
+      avatar: testimonialAvatars?.david || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1887&auto=format&fit=crop",
       rating: 5
     }
   ];

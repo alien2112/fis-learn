@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { LiveCodeEditor, CodeExecutionResult } from '@/components';
 import { motion } from 'framer-motion';
+import apiClient from '@/lib/api/client';
 
 const codeExamples = {
   javascript: `// JavaScript Example
@@ -42,41 +43,48 @@ export default function CodeEditorTestPage() {
   const [executionResult, setExecutionResult] = useState<CodeExecutionResult | null>(null);
 
   const handleRun = async (code: string): Promise<CodeExecutionResult> => {
-    // Simulate API execution - replace with real API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simple mock execution for demonstration
-    let output = '';
-    let error = null;
-    
-    try {
-      if (language === 'javascript') {
-        // Capture console.log output
-        const logs: string[] = [];
-        const mockConsole = {
-          log: (...args: any[]) => logs.push(args.join(' ')),
-        };
-        
-        // eslint-disable-next-line no-eval
-        const func = new Function('console', code);
-        func(mockConsole);
-        output = logs.join('\n') || 'Code executed successfully';
-      } else {
-        output = `${language.toUpperCase()} code would be executed here...\nOutput: Success`;
-      }
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Execution error';
+    // HTML/CSS: preview only, no server execution needed
+    if (language === 'html' || language === 'css') {
+      const result: CodeExecutionResult = {
+        output: `${language.toUpperCase()} rendered in preview tab`,
+        error: null,
+        executionTime: 0,
+        status: 'success',
+      };
+      setExecutionResult(result);
+      return result;
     }
-    
-    const result: CodeExecutionResult = {
-      output,
-      error,
-      executionTime: Math.floor(Math.random() * 500) + 100,
-      status: error ? 'error' : 'success',
-    };
-    
-    setExecutionResult(result);
-    return result;
+
+    try {
+      const { data } = await apiClient.post('/code-execution/execute', {
+        sourceCode: code,
+        languageId: language,
+      });
+
+      const isSuccess = data.status === 'accepted';
+      const isTimeout = data.status === 'time_limit_exceeded';
+
+      const result: CodeExecutionResult = {
+        output: data.stdout || '',
+        error: data.stderr || data.compileOutput || null,
+        executionTime: data.executionTime ? Math.round(data.executionTime * 1000) : 0,
+        status: isTimeout ? 'timeout' : isSuccess ? 'success' : 'error',
+      };
+
+      setExecutionResult(result);
+      return result;
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message || err?.message || 'فشل الاتصال بخادم التنفيذ';
+      const result: CodeExecutionResult = {
+        output: '',
+        error: message,
+        executionTime: 0,
+        status: 'error',
+      };
+      setExecutionResult(result);
+      return result;
+    }
   };
 
   return (

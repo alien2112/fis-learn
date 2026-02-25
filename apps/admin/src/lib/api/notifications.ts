@@ -62,7 +62,7 @@ export const notificationsApi = {
   // Send bulk notification
   sendBulk: async (data: SendBulkNotificationDto): Promise<BulkNotificationResponse> => {
     const response = await apiClient.post('/notifications/send-bulk', data);
-    return response.data;
+    return response.data.data;
   },
 
   // Get bulk notification history
@@ -70,7 +70,7 @@ export const notificationsApi = {
     const response = await apiClient.get('/notifications/bulk-history', {
       params: { page, limit },
     });
-    return response.data;
+    return response.data.data;
   },
 
   // Calculate stats from history (client-side calculation)

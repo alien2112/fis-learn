@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { useRouter } from 'next/navigation';
 import { User } from '@/types';
 import { authApi } from '@/lib/api';
+import { setTokens, clearTokens } from '@/lib/auth-storage';
 
 interface AuthContextType {
   user: User | null;
@@ -46,6 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await authApi.login(email, password);
+    if (response.tokens?.accessToken && response.tokens?.refreshToken) {
+      setTokens(response.tokens.accessToken, response.tokens.refreshToken);
+    }
     setUser(response.user);
 
     // Check if user has admin access
@@ -56,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    clearTokens();
     try {
       await authApi.logout();
     } catch {

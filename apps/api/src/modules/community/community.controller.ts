@@ -99,7 +99,7 @@ export class CommunityController {
     @CurrentUser() user: AuthUser,
   ) {
     const message = await this.communityService.createMessage(channelId, user, dto);
-    this.communityGateway.emitMessage(message);
+    this.communityGateway.emitMessage(message, dto.clientId);
     return message;
   }
 

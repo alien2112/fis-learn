@@ -3,12 +3,19 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import apiClient from '@/lib/api/client';
 import { enrollmentApi } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { LiveCodeEditor } from '@/components/code-editor';
-import { VideoPlayer } from '@/components/video';
 import { YouTubePlayer } from '@/components/video/YouTubePlayer';
+
+// Dynamic import with ssr:false to prevent web component registration errors
+// (@mux/mux-player-react calls customElements.define which fails in Node.js)
+const VideoPlayer = dynamic(
+  () => import('@/components/video').then(m => ({ default: m.VideoPlayer })),
+  { ssr: false }
+);
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -226,11 +233,15 @@ export default function LessonPage() {
       });
 
       const result = response.data.data;
-      const isSuccess = result.status === 'ACCEPTED' || (!result.stderr && result.stdout);
+      // API returns lowercase 'accepted'; also treat exitCode 0 as success
+      const isSuccess =
+        result.status?.toLowerCase() === 'accepted' ||
+        result.exitCode === 0 ||
+        (!result.stderr && result.stderr !== '');
       return {
         output: result.stdout || '',
-        error: result.stderr || null,
-        executionTime: result.executionTime || 0,
+        error: result.stderr || result.compile_output || null,
+        executionTime: result.executionTime || result.wallTime || 0,
         status: (isSuccess ? 'success' : 'error') as 'success' | 'error',
       };
     } catch (err: any) {

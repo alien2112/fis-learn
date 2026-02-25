@@ -69,8 +69,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
         // Sentry not configured, ignore
       }
     } else {
+      // Log full validation details for 4xx so they appear in docker logs
+      const detail = Array.isArray(message) ? message.join(', ') : message;
       this.logger.warn(
-        `${request.method} ${safeUrl} - ${status}: ${message}`,
+        `${request.method} ${safeUrl} - ${status}: ${detail}`,
       );
     }
 

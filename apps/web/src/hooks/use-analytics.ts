@@ -192,9 +192,20 @@ export function useAnalytics() {
     // Flush every 30 seconds
     flushIntervalRef.current = setInterval(flush, 30000);
 
-    // Flush on page unload
+    // Flush on page unload — use sendBeacon for guaranteed delivery
+    // (async fetch gets cancelled by the browser on navigation)
     const handleBeforeUnload = () => {
-      flush();
+      if (bufferRef.current.length === 0 || !user) return;
+      const events = [...bufferRef.current];
+      bufferRef.current = [];
+      try {
+        const body = new Blob([JSON.stringify({ events })], {
+          type: 'application/json',
+        });
+        navigator.sendBeacon('/api/analytics/events', body);
+      } catch {
+        // sendBeacon not available (e.g. SSR); best-effort only
+      }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
 

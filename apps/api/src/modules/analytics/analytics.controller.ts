@@ -7,6 +7,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AnalyticsService } from './analytics.service';
 import { TrackEventDto } from './dto/track-event.dto';
@@ -15,6 +16,8 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 
+@ApiTags('Analytics')
+@ApiBearerAuth()
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private analyticsService: AnalyticsService) {}
@@ -22,6 +25,8 @@ export class AnalyticsController {
   @Post('events')
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 100, ttl: 60000 } }) // 100 requests per minute
+  @ApiOperation({ summary: 'Track analytics events (respects cookie consent)' })
+  @ApiResponse({ status: 200, description: 'Events tracked' })
   async trackEvents(
     @Body() body: { events: TrackEventDto[] },
     @Req() req: any,
@@ -55,6 +60,8 @@ export class AnalyticsController {
 
   @Get('dashboard')
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get current user analytics dashboard' })
+  @ApiResponse({ status: 200, description: 'Student dashboard data' })
   async getMyDashboard(@Req() req: any) {
     return this.analyticsService.getStudentDashboard(req.user.userId);
   }
@@ -62,6 +69,8 @@ export class AnalyticsController {
   @Get('course/:courseId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.INSTRUCTOR, Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get course analytics (instructor/admin)' })
+  @ApiResponse({ status: 200, description: 'Course analytics' })
   async getCourseAnalytics(
     @Param('courseId') courseId: string,
     @Req() req: any,

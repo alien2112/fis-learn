@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import apiClient from '@/lib/api/client';
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,9 @@ import {
   Link as LinkIcon,
   Upload,
   Image as ImageIcon,
-  Trash2
+  Trash2,
+  Code,
+  Plus
 } from 'lucide-react';
 
 interface LessonEditorDialogProps {
@@ -75,6 +78,18 @@ export function LessonEditorDialog({
   // Thumbnail
   const [thumbnailUrl, setThumbnailUrl] = useState<string>('');
   const [thumbnailSource, setThumbnailSource] = useState<'youtube' | 'custom'>('youtube');
+
+  // Code Exercises (stored as lesson.codeExercises from API)
+  const [showCodeExercises, setShowCodeExercises] = useState(false);
+  const [showExerciseForm, setShowExerciseForm] = useState(false);
+  const [newExercise, setNewExercise] = useState({
+    title: '',
+    description: '',
+    languageId: 'python',
+    starterCode: '',
+    difficulty: 'EASY',
+    points: 10,
+  });
 
   // Initialize form when editing existing lesson
   useEffect(() => {
@@ -193,25 +208,54 @@ export function LessonEditorDialog({
   };
 
   const handleSave = () => {
-    const videoData: VideoData | null = contentType === 'VIDEO' ? {
-      type: videoSource,
-      url: videoUrl,
-      isPlaylist,
-      duration: duration ? parseInt(duration) * 60 : undefined,
-    } : null;
-
+    // Only send valid DTO fields - parent already knows lesson ID
     onSave({
-      id: lesson?.id,
-      sectionId,
       title,
       description,
       contentType,
       isFreePreview,
       duration: duration ? parseInt(duration) * 60 : undefined,
-      videoData,
+      youtubeUrl: contentType === 'VIDEO' && videoSource === 'youtube' ? videoUrl : undefined,
     });
-    
+
     onClose();
+  };
+
+  const handleCreateExercise = async () => {
+    if (!lesson?.id || !newExercise.title.trim()) {
+      alert('يجب حفظ الدرس أولاً وإدخال عنوان التمرين');
+      return;
+    }
+
+    try {
+      const response = await apiClient.post('/code-exercises', {
+        lessonId: lesson.id,
+        title: newExercise.title,
+        description: newExercise.description,
+        instructions: newExercise.description,
+        languageId: newExercise.languageId,
+        starterCode: newExercise.starterCode || '# Write your code here',
+        difficulty: newExercise.difficulty.toLowerCase(), // 'easy', 'medium', 'hard'
+        points: newExercise.points,
+        timeLimit: 5,
+        memoryLimit: 128000,
+      });
+
+      alert('تم إضافة التمرين بنجاح! احفظ الدرس لرؤية التحديثات.');
+      setShowExerciseForm(false);
+      setNewExercise({
+        title: '',
+        description: '',
+        languageId: 'python',
+        starterCode: '',
+        difficulty: 'EASY',
+        points: 10,
+      });
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || err?.message || 'خطأ غير معروف';
+      alert(`فشل إضافة التمرين: ${errorMsg}`);
+      console.error(err);
+    }
   };
 
   const isValid = title.trim() && (contentType !== 'VIDEO' || (videoUrl && previewValid));
@@ -418,6 +462,151 @@ export function LessonEditorDialog({
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Code Exercises Section */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-medium flex items-center gap-2">
+                <Code className="w-4 h-4" />
+                تمارين البرمجة (Code Exercises)
+              </Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCodeExercises(!showCodeExercises)}
+              >
+                {showCodeExercises ? 'إخفاء' : 'عرض'}
+              </Button>
+            </div>
+
+            {showCodeExercises && (
+              <div className="space-y-3">
+                {lesson?.codeExercises && lesson.codeExercises.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">التمارين الموجودة ({lesson.codeExercises.length}):</p>
+                    {lesson.codeExercises.map((ex: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded border">
+                        <div>
+                          <p className="font-medium text-sm">{ex.title}</p>
+                          <p className="text-xs text-slate-500">{ex.languageId} • {ex.difficulty} • {ex.points} نقطة</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowExerciseForm(!showExerciseForm)}
+                  disabled={!lesson?.id}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {lesson?.id ? 'إضافة تمرين جديد' : 'احفظ الدرس أولاً لإضافة تمارين'}
+                </Button>
+
+                {showExerciseForm && lesson?.id && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-3 p-4 border rounded-lg bg-slate-50"
+                  >
+                    <div className="space-y-2">
+                      <Label>عنوان التمرين *</Label>
+                      <Input
+                        value={newExercise.title}
+                        onChange={(e) => setNewExercise({ ...newExercise, title: e.target.value })}
+                        placeholder="مثال: اكتب دالة لحساب المجموع"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>الوصف</Label>
+                      <Textarea
+                        value={newExercise.description}
+                        onChange={(e) => setNewExercise({ ...newExercise, description: e.target.value })}
+                        placeholder="اشرح ما يجب على الطالب فعله"
+                        rows={2}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label>لغة البرمجة</Label>
+                        <Select value={newExercise.languageId} onValueChange={(v) => setNewExercise({ ...newExercise, languageId: v })}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="python">Python</SelectItem>
+                            <SelectItem value="javascript">JavaScript</SelectItem>
+                            <SelectItem value="java">Java</SelectItem>
+                            <SelectItem value="cpp">C++</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>الصعوبة</Label>
+                        <Select value={newExercise.difficulty} onValueChange={(v) => setNewExercise({ ...newExercise, difficulty: v })}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="EASY">سهل</SelectItem>
+                            <SelectItem value="MEDIUM">متوسط</SelectItem>
+                            <SelectItem value="HARD">صعب</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>النقاط</Label>
+                      <Input
+                        type="number"
+                        value={newExercise.points}
+                        onChange={(e) => setNewExercise({ ...newExercise, points: parseInt(e.target.value) || 10 })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>الكود الأولي (Starter Code)</Label>
+                      <Textarea
+                        value={newExercise.starterCode}
+                        onChange={(e) => setNewExercise({ ...newExercise, starterCode: e.target.value })}
+                        placeholder="# Write your code here&#10;def solution():"
+                        rows={3}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleCreateExercise}
+                        disabled={!newExercise.title.trim()}
+                      >
+                        حفظ التمرين
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowExerciseForm(false)}
+                      >
+                        إلغاء
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Duration & Settings */}
           <div className="grid gap-4 md:grid-cols-2">

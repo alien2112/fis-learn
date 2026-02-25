@@ -367,17 +367,17 @@ export const DEFAULT_SANDBOX_CONFIG: SandboxConfig = {
 
 export const DEFAULT_TIER_LIMITS: Record<string, ExecutionLimits> = {
   FREE: {
-    executionsPerDay: 50,
-    executionsPerHour: 10,
-    concurrentExecutions: 1,
-    cpuTimeLimitPerExecution: 2,
-    memoryLimitPerExecution: 128 * 1024, // 128 MB
-    maxCodeSize: 10000, // 10K characters
-    maxStdinSize: 5000, // 5K characters
+    executionsPerDay: -1, // Unlimited
+    executionsPerHour: -1, // Unlimited
+    concurrentExecutions: 2,
+    cpuTimeLimitPerExecution: 5,
+    memoryLimitPerExecution: 256 * 1024, // 256 MB
+    maxCodeSize: 50000, // 50K characters
+    maxStdinSize: 20000, // 20K characters
   },
   BASIC: {
-    executionsPerDay: 500,
-    executionsPerHour: 100,
+    executionsPerDay: -1, // Unlimited
+    executionsPerHour: -1, // Unlimited
     concurrentExecutions: 2,
     cpuTimeLimitPerExecution: 5,
     memoryLimitPerExecution: 256 * 1024, // 256 MB
@@ -385,8 +385,8 @@ export const DEFAULT_TIER_LIMITS: Record<string, ExecutionLimits> = {
     maxStdinSize: 20000, // 20K characters
   },
   PRO: {
-    executionsPerDay: 5000,
-    executionsPerHour: 500,
+    executionsPerDay: -1, // Unlimited
+    executionsPerHour: -1, // Unlimited
     concurrentExecutions: 5,
     cpuTimeLimitPerExecution: 10,
     memoryLimitPerExecution: 512 * 1024, // 512 MB

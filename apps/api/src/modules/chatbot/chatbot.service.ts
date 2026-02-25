@@ -105,7 +105,14 @@ RULES:
 
   async chatPublic(messages: { role: 'user' | 'assistant'; content: string }[]): Promise<string> {
     if (!this.aiProvider) {
-      return 'Sorry, the chatbot is currently unavailable. Please try again later or contact support@fis-learn.com';
+      this.logger.error('AI provider not initialized - check your API key configuration');
+      return 'Sorry, the chatbot is currently unavailable. Please contact support@fis-learn.com';
+    }
+
+    // Validate messages array is not empty
+    if (!messages || messages.length === 0) {
+      this.logger.warn('Received empty messages array');
+      return 'Please send a message to start the conversation.';
     }
 
     const systemPrompt = await this.buildPublicSystemPrompt();
@@ -114,7 +121,7 @@ RULES:
       return await this.aiProvider.chat(messages, systemPrompt);
     } catch (error) {
       this.logger.error(`Chat error: ${error.message}`, error.stack);
-      return 'Sorry, I encountered an error. Please try again later.';
+      return 'Sorry, I encountered an error processing your message. Please try again.';
     }
   }
 
@@ -130,7 +137,14 @@ RULES:
     exerciseId?: string,
   ): Promise<string> {
     if (!this.aiProvider) {
-      return 'Sorry, the chatbot is currently unavailable. Please try again later or contact support@fis-learn.com';
+      this.logger.error('AI provider not initialized - check your API key configuration');
+      return 'Sorry, the chatbot is currently unavailable. Please contact support@fis-learn.com';
+    }
+
+    // Validate messages array is not empty
+    if (!messages || messages.length === 0) {
+      this.logger.warn('Received empty messages array');
+      return 'Please send a message to start the conversation.';
     }
 
     const systemPrompt = await this.buildAuthenticatedSystemPrompt(
@@ -144,7 +158,7 @@ RULES:
       return await this.aiProvider.chat(messages, systemPrompt);
     } catch (error) {
       this.logger.error(`Authenticated chat error: ${error.message}`, error.stack);
-      return 'Sorry, I encountered an error. Please try again later.';
+      return 'Sorry, I encountered an error processing your message. Please try again.';
     }
   }
 

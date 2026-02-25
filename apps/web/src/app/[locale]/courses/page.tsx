@@ -11,6 +11,39 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
+// Pre-computed at module load time so WorldBackdrop never calls Math.random() during renders
+const STAR_PARTICLES = Array.from({ length: 20 }, (_, i) => ({
+  id: i,
+  duration: Math.random() * 3 + 2,
+  delay: Math.random() * 5,
+  top: Math.random() * 100,
+  left: Math.random() * 100,
+  width: Math.random() * 2 + 1,
+  height: Math.random() * 2 + 1,
+}));
+
+const SYMBOL_PARTICLES = Array.from({ length: 10 }, (_, i) => ({
+  id: i,
+  duration: 10 + Math.random() * 10,
+  delay: Math.random() * 10,
+  left: Math.random() * 100,
+  symbol: ['{ }', '</>', '&&', '||', '=>', '[]'][i % 6],
+}));
+
+const CANDLESTICK_BARS = Array.from({ length: 20 }, (_, i) => ({
+  id: i,
+  height: Math.random() * 80 + 20,
+  color: Math.random() > 0.5 ? '#4ADE80' : '#EF4444',
+}));
+
+const CURRENCY_PARTICLES = Array.from({ length: 8 }, (_, i) => ({
+  id: i,
+  duration: 15 + Math.random() * 10,
+  delay: Math.random() * 10,
+  left: Math.random() * 90,
+  symbol: ['$', '€', '£', '¥', 'BTC', 'ETH'][i % 6],
+}));
+
 type WorldId = 'programming' | 'graphic-design' | 'trading';
 type WorldKey = WorldId | 'hub';
 
@@ -332,18 +365,18 @@ function WorldBackdrop({ worldId }: { worldId: WorldKey }) {
         />
 
         {/* Subtle twinkling stars */}
-        {[...Array(20)].map((_, i) => (
+        {STAR_PARTICLES.map((star) => (
           <motion.div
-            key={i}
+            key={star.id}
             className="absolute bg-white rounded-full"
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: [0, 0.8, 0], scale: [0, 1, 0] }}
-            transition={{ duration: Math.random() * 3 + 2, repeat: Infinity, delay: Math.random() * 5 }}
+            transition={{ duration: star.duration, repeat: Infinity, delay: star.delay }}
             style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              width: Math.random() * 2 + 1,
-              height: Math.random() * 2 + 1
+              top: `${star.top}%`,
+              left: `${star.left}%`,
+              width: star.width,
+              height: star.height
             }}
           />
         ))}
@@ -399,16 +432,16 @@ function WorldBackdrop({ worldId }: { worldId: WorldKey }) {
         </div>
 
         {/* Floating Symbols */}
-        {[...Array(10)].map((_, i) => (
+        {SYMBOL_PARTICLES.map((p) => (
           <motion.div
-            key={i}
+            key={p.id}
             className="absolute text-[#00E5FF]/20 font-mono font-bold text-2xl"
             initial={{ y: '100vh', opacity: 0 }}
             animate={{ y: '-10vh', opacity: [0, 0.5, 0] }}
-            transition={{ duration: 10 + Math.random() * 10, repeat: Infinity, delay: Math.random() * 10, ease: 'linear' }}
-            style={{ left: `${Math.random() * 100}%` }}
+            transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: 'linear' }}
+            style={{ left: `${p.left}%` }}
           >
-            {['{ }', '</>', '&&', '||', '=>', '[]'][i % 6]}
+            {p.symbol}
           </motion.div>
         ))}
 
@@ -519,38 +552,32 @@ function WorldBackdrop({ worldId }: { worldId: WorldKey }) {
 
         {/* Candlestick Chart Simulation */}
         <div className="absolute bottom-0 left-0 right-0 h-64 flex items-end justify-around opacity-20 px-10">
-          {[...Array(20)].map((_, i) => {
-            const height = Math.random() * 80 + 20; // 20% to 100%
-            const isGreen = Math.random() > 0.5;
-            const color = isGreen ? '#4ADE80' : '#EF4444';
-
-            return (
+          {CANDLESTICK_BARS.map((bar) => (
               <motion.div
-                key={i}
+                key={bar.id}
                 className="w-2 md:w-4 relative"
                 initial={{ height: '0%' }}
-                animate={{ height: [`0%`, `${height}%`] }}
-                transition={{ duration: 1.5, delay: i * 0.1, ease: 'easeOut' }}
-                style={{ backgroundColor: color }}
+                animate={{ height: [`0%`, `${bar.height}%`] }}
+                transition={{ duration: 1.5, delay: bar.id * 0.1, ease: 'easeOut' }}
+                style={{ backgroundColor: bar.color }}
               >
                 {/* Wick */}
                 <div className="absolute left-1/2 -translate-x-1/2 -top-4 w-[1px] h-[calc(100%+20px)] bg-white/50" />
               </motion.div>
-            )
-          })}
+            ))}
         </div>
 
         {/* Floating Currency Symbols */}
-        {[...Array(8)].map((_, i) => (
+        {CURRENCY_PARTICLES.map((p) => (
           <motion.div
-            key={i}
+            key={p.id}
             className="absolute text-white/5 font-bold text-4xl"
             initial={{ y: '110%', opacity: 0 }}
             animate={{ y: '-10%', opacity: [0, 1, 0] }}
-            transition={{ duration: 15 + Math.random() * 10, repeat: Infinity, delay: Math.random() * 10, ease: 'linear' }}
-            style={{ left: `${Math.random() * 90}%` }}
+            transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: 'linear' }}
+            style={{ left: `${p.left}%` }}
           >
-            {['$', '€', '£', '¥', 'BTC', 'ETH'][i % 6]}
+            {p.symbol}
           </motion.div>
         ))}
 
@@ -608,13 +635,10 @@ function WorldPortalCard({
   if (!world.portal) return null;
 
   const labelPrimary = isRTL ? world.copy.label.ar : world.copy.label.en;
-  const labelSecondary = isRTL ? null : world.copy.label.ar;
 
   const headlinePrimary = isRTL ? world.copy.headline.ar : world.copy.headline.en;
-  const headlineSecondary = isRTL ? world.copy.headline.en : world.copy.headline.ar;
 
   const ctaPrimary = isRTL ? world.copy.cta.ar : world.copy.cta.en;
-  const ctaSecondary = isRTL ? world.copy.cta.en : world.copy.cta.ar;
 
   const countPrimary =
     typeof courseCount === 'number' && courseCount > 0
@@ -683,14 +707,6 @@ function WorldPortalCard({
             >
               {labelPrimary}
             </div>
-            {labelSecondary && (
-              <div
-                className={cn('text-xs opacity-60 font-medium uppercase tracking-wider', isArabicText(labelSecondary) ? 'font-ar' : world.typography.en)}
-                dir={isRTL ? 'ltr' : 'rtl'}
-              >
-                {labelSecondary}
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -706,15 +722,6 @@ function WorldPortalCard({
               dir={isRTL ? 'rtl' : 'ltr'}
             >
               {headlinePrimary}
-            </div>
-            <div
-              className={cn(
-                'text-sm sm:text-base font-semibold opacity-70 leading-relaxed line-clamp-2',
-                isArabicText(headlineSecondary) ? 'font-ar' : world.typography.en,
-              )}
-              dir={isRTL ? 'ltr' : 'rtl'}
-            >
-              {headlineSecondary}
             </div>
           </div>
 
@@ -895,13 +902,6 @@ function CoursesContent() {
     concept: isRTL ? activeWorld.copy.concept.ar : activeWorld.copy.concept.en,
   };
 
-  const secondary = {
-    headline: isRTL ? null : activeWorld.copy.headline.ar,
-    subline: isRTL ? null : activeWorld.copy.subline.ar,
-    cta: isRTL ? null : activeWorld.copy.cta.ar,
-    concept: isRTL ? null : activeWorld.copy.concept.ar,
-  };
-
   return (
     <div
       className="min-h-screen pb-20 bg-background text-foreground"
@@ -959,27 +959,11 @@ function CoursesContent() {
                       <span className="block" dir={isRTL ? 'rtl' : 'ltr'}>
                         {primary.headline}
                       </span>
-                      {secondary.headline && (
-                        <span
-                          className={cn(
-                            'mt-4 block text-lg md:text-xl font-semibold text-muted-foreground',
-                            isArabicText(secondary.headline) ? 'font-ar' : activeWorld.typography.en,
-                          )}
-                          dir={isRTL ? 'ltr' : 'rtl'}
-                        >
-                          {secondary.headline}
-                        </span>
-                      )}
                     </h1>
 
                     <p className={cn('mt-6 text-sm md:text-base text-muted-foreground max-w-xl', isRTL ? 'font-ar' : 'font-sans')} dir={isRTL ? 'rtl' : 'ltr'}>
                       {primary.subline}
                     </p>
-                    {secondary.subline && (
-                      <p className={cn('mt-2 text-sm md:text-base text-muted-foreground/90 max-w-xl', isArabicText(secondary.subline) ? 'font-ar' : 'font-sans')} dir={isRTL ? 'ltr' : 'rtl'}>
-                        {secondary.subline}
-                      </p>
-                    )}
 
                     <div className="mt-8 flex">
                       <Button
@@ -991,11 +975,6 @@ function CoursesContent() {
                           <span className={cn('text-base font-semibold', isRTL ? 'font-ar' : 'font-sans')} dir={isRTL ? 'rtl' : 'ltr'}>
                             {primary.cta}
                           </span>
-                          {secondary.cta && (
-                            <span className={cn('text-xs font-medium opacity-85', isArabicText(secondary.cta) ? 'font-ar' : 'font-sans')} dir={isRTL ? 'ltr' : 'rtl'}>
-                              {secondary.cta}
-                            </span>
-                          )}
                         </span>
                         <ArrowRight className={cn('h-5 w-5 opacity-90', isRTL ? 'rotate-180' : '')} />
                       </Button>
@@ -1038,27 +1017,11 @@ function CoursesContent() {
                         <span className="block" dir={isRTL ? 'rtl' : 'ltr'}>
                           {primary.headline}
                         </span>
-                        {secondary.headline && (
-                          <span
-                            className={cn(
-                              'mt-4 block text-lg md:text-xl font-semibold text-muted-foreground',
-                              isArabicText(secondary.headline) ? 'font-ar' : activeWorld.typography.en,
-                            )}
-                            dir={isRTL ? 'ltr' : 'rtl'}
-                          >
-                            {secondary.headline}
-                          </span>
-                        )}
                       </h1>
 
                       <p className={cn('mt-6 text-sm md:text-base text-muted-foreground max-w-xl', isRTL ? 'font-ar' : 'font-sans')} dir={isRTL ? 'rtl' : 'ltr'}>
                         {primary.subline}
                       </p>
-                      {secondary.subline && (
-                        <p className={cn('mt-2 text-sm md:text-base text-muted-foreground/90 max-w-xl', isArabicText(secondary.subline) ? 'font-ar' : 'font-sans')} dir={isRTL ? 'ltr' : 'rtl'}>
-                          {secondary.subline}
-                        </p>
-                      )}
 
                       <div className="mt-8 flex flex-col sm:flex-row gap-3">
                         <Button
@@ -1070,11 +1033,6 @@ function CoursesContent() {
                             <span className={cn('text-base font-semibold', isRTL ? 'font-ar' : 'font-sans')} dir={isRTL ? 'rtl' : 'ltr'}>
                               {primary.cta}
                             </span>
-                            {secondary.cta && (
-                              <span className={cn('text-xs font-medium opacity-85', isArabicText(secondary.cta) ? 'font-ar' : 'font-sans')} dir={isRTL ? 'ltr' : 'rtl'}>
-                                {secondary.cta}
-                              </span>
-                            )}
                           </span>
                           <ArrowRight className={cn('h-5 w-5 opacity-90', isRTL ? 'rotate-180' : '')} />
                         </Button>
@@ -1117,6 +1075,7 @@ function CoursesContent() {
           </div>
         </div>
       </section>
+
 
       {selectedWorld === 'hub' ? null : (
         <section ref={gridRef} className="container py-12">

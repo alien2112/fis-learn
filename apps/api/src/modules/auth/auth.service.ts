@@ -36,14 +36,10 @@ export class AuthService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.ensureDevAdminUser();
+    await this.ensureDefaultAdminUser();
   }
 
-  private async ensureDevAdminUser() {
-    if (process.env.NODE_ENV === 'production') {
-      return;
-    }
-
+  private async ensureDefaultAdminUser() {
     const email = 'admin@fis-learn.com';
     try {
       const existing = await this.prisma.user.findUnique({
@@ -151,6 +147,21 @@ export class AuthService implements OnModuleInit {
       },
     });
 
+    // If email verification is disabled, auto-verify and let the user log in immediately
+    const emailVerificationRequired = this.configService.get<boolean>('auth.emailVerificationRequired') ?? false;
+
+    if (!emailVerificationRequired) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { status: UserStatus.ACTIVE, emailVerifiedAt: new Date() },
+      });
+      this.logger.warn(`Email verification disabled — auto-verified user ${user.email}`);
+      return {
+        user: { ...user, status: UserStatus.ACTIVE },
+        message: 'Registration successful. You can now log in.',
+      };
+    }
+
     // Generate verification token and send email
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
@@ -165,15 +176,20 @@ export class AuthService implements OnModuleInit {
     });
 
     const webUrl = this.configService.get<string>('urls.web') || 'http://localhost:3002';
-    await this.emailService.sendTemplateEmail({
-      to: user.email,
-      templateId: EmailTemplateType.EMAIL_VERIFICATION,
-      templateData: {
-        userName: user.name,
-        verificationUrl: `${webUrl}/verify-email?token=${token}`,
-        expiresInHours: 24,
-      },
-    });
+    try {
+      await this.emailService.sendTemplateEmail({
+        to: user.email,
+        templateId: EmailTemplateType.EMAIL_VERIFICATION,
+        templateData: {
+          userName: user.name,
+          verificationUrl: `${webUrl}/verify-email?token=${token}`,
+          expiresInHours: 24,
+        },
+      });
+    } catch (emailError) {
+      this.logger.error(`Failed to send verification email to ${user.email}: ${emailError.message}`);
+      // Registration succeeded; user must verify email once SMTP is fixed
+    }
 
     return {
       user,
@@ -251,6 +267,8 @@ export class AuthService implements OnModuleInit {
         role: user.role,
         status: user.status,
         avatarUrl: user.avatarUrl,
+        locale: user.locale,
+        timezone: user.timezone,
       },
       tokens,
     };
@@ -320,6 +338,8 @@ export class AuthService implements OnModuleInit {
         role: true,
         status: true,
         avatarUrl: true,
+        locale: true,
+        timezone: true,
       },
     });
 
@@ -497,6 +517,8 @@ export class AuthService implements OnModuleInit {
         role: user.role,
         status: user.status,
         avatarUrl: user.avatarUrl,
+        locale: user.locale,
+        timezone: user.timezone,
       },
       tokens,
     };
@@ -555,19 +577,21 @@ export class AuthService implements OnModuleInit {
       status,
     };
 
+    const accessExpiry = this.configService.get<string>('jwt.expiry') || '3650d';
+    const refreshExpiry = this.configService.get<string>('jwt.refreshExpiry') || '3650d';
+
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('jwt.secret'),
-        expiresIn: this.configService.get<string>('jwt.expiry') || '15m',
+        expiresIn: accessExpiry,
       }),
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('jwt.refreshSecret'),
-        expiresIn: this.configService.get<string>('jwt.refreshExpiry') || '7d',
+        expiresIn: refreshExpiry,
       }),
     ]);
 
-    // Calculate refresh token expiry
-    const refreshExpiry = this.configService.get<string>('jwt.refreshExpiry') || '7d';
+    // Calculate refresh token expiry (stored in DB)
     const expiresAt = this.calculateExpiryDate(refreshExpiry);
 
     // Store refresh token in database

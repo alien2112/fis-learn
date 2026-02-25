@@ -21,4 +21,6 @@ export interface AuthUser {
   role: Role;
   status: UserStatus;
   avatarUrl?: string | null;
+  locale?: string;
+  timezone?: string;
 }

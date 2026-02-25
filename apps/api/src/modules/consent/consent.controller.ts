@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '@/common/decorators/public.decorator';
 import { ConsentService } from './consent.service';
 
@@ -17,6 +17,7 @@ export class ConsentController {
   @Public()
   @Post()
   @ApiOperation({ summary: 'Record cookie consent preferences' })
+  @ApiResponse({ status: 200, description: 'Consent recorded' })
   async recordConsent(@Body() dto: RecordConsentDto, @Req() req: any) {
     const userId = req.user?.userId || null;
     await this.consentService.recordConsent(userId, dto, req.ip);

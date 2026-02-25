@@ -16,48 +16,7 @@ interface YouTubePlayerProps {
   className?: string;
 }
 
-// YouTube Player types
-interface YouTubePlayerInstance {
-  playVideo: () => void;
-  pauseVideo: () => void;
-  stopVideo: () => void;
-  getCurrentTime: () => number;
-  getDuration: () => number;
-  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
-  getPlayerState: () => number;
-  destroy: () => void;
-}
-
-declare global {
-  interface Window {
-    YT: {
-      Player: new (
-        elementId: string,
-        options: {
-          videoId: string;
-          playerVars?: Record<string, number | string>;
-          events?: {
-            onReady?: (event: { target: YouTubePlayerInstance }) => void;
-            onStateChange?: (event: { data: number; target: YouTubePlayerInstance }) => void;
-            onError?: (event: { data: number }) => void;
-          };
-        }
-      ) => YouTubePlayerInstance;
-      PlayerState: {
-        PLAYING: number;
-        PAUSED: number;
-        ENDED: number;
-        BUFFERING: number;
-        CUED: number;
-        UNSTARTED: number;
-      };
-    };
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
-
 const PROGRESS_MILESTONES = [25, 50, 75, 90];
-const POLL_INTERVAL = 5000; // Check progress every 5 seconds
 
 export function YouTubePlayer({
   youtubeUrl,
@@ -68,221 +27,108 @@ export function YouTubePlayer({
   autoPlay = false,
   className = '',
 }: YouTubePlayerProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<YouTubePlayerInstance | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAPIReady, setIsAPIReady] = useState(false);
-  const reportedMilestonesRef = useRef<number[]>([]);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastReportedProgressRef = useRef<number>(0);
+  const reportedMilestonesRef = useRef<Set<number>>(new Set());
+  const durationRef = useRef<number>(0);
+  const onProgressRef = useRef(onProgress);
+  const courseIdRef = useRef(courseId);
+  const lessonIdRef = useRef(lessonId);
+  useEffect(() => { onProgressRef.current = onProgress; }, [onProgress]);
+  useEffect(() => { courseIdRef.current = courseId; }, [courseId]);
+  useEffect(() => { lessonIdRef.current = lessonId; }, [lessonId]);
 
   // Extract video ID from various YouTube URL formats
-  const extractVideoId = useCallback((url: string): string | null => {
+  const extractVideoId = (url: string): string | null => {
     const patterns = [
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
       /^([a-zA-Z0-9_-]{11})$/, // Just the video ID
     ];
-
     for (const pattern of patterns) {
       const match = url.match(pattern);
       if (match) return match[1];
     }
     return null;
-  }, []);
+  };
 
   const videoId = extractVideoId(youtubeUrl);
 
-  // Load YouTube IFrame API
-  useEffect(() => {
-    if (window.YT?.Player) {
-      setIsAPIReady(true);
-      return;
-    }
-
-    // Create script tag
-    const tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-
-    // Set up callback
-    window.onYouTubeIframeAPIReady = () => {
-      setIsAPIReady(true);
-    };
-
-    return () => {
-      window.onYouTubeIframeAPIReady = undefined;
-    };
-  }, []);
-
-  // Report analytics event
   const reportAnalyticsEvent = useCallback(
-    async (eventType: string, payload: Record<string, any>) => {
-      if (!courseId || !lessonId) return;
-
+    async (eventType: string, payload: Record<string, unknown>) => {
+      if (!courseIdRef.current || !lessonIdRef.current) return;
       try {
         await apiClient.post('/analytics/events', {
           events: [
             {
               eventType,
-              courseId,
-              lessonId,
+              courseId: courseIdRef.current,
+              lessonId: lessonIdRef.current,
               timestamp: Date.now(),
-              payload: {
-                videoId,
-                ...payload,
-              },
+              payload: { videoId, ...payload },
             },
           ],
         });
-      } catch (err) {
-        // Silently fail analytics - don't disrupt learning
-        console.debug('Failed to report analytics:', err);
+      } catch {
+        // Silently fail analytics
       }
     },
-    [courseId, lessonId, videoId]
+    [videoId]
   );
 
-  // Track and report progress
-  const trackProgress = useCallback(() => {
-    if (!playerRef.current) return;
-
-    try {
-      const currentTime = playerRef.current.getCurrentTime();
-      const duration = playerRef.current.getDuration();
-
-      if (!duration || duration <= 0) return;
-
-      const percent = (currentTime / duration) * 100;
-      const roundedPercent = Math.round(percent);
-
-      // Report milestones
-      PROGRESS_MILESTONES.forEach((milestone) => {
-        if (percent >= milestone && !reportedMilestonesRef.current.includes(milestone)) {
-          // Call the onProgress callback
-          onProgress?.(milestone);
-
-          // Report analytics
-          reportAnalyticsEvent(
-            milestone >= 90 ? 'VIDEO_COMPLETE' : 'VIDEO_PROGRESS',
-            {
-              watchPct: milestone,
-              secondsWatched: Math.round(currentTime),
-              duration: Math.round(duration),
-            }
-          );
-
-          reportedMilestonesRef.current.push(milestone);
-        }
-      });
-
-      // Report continuous progress every 10% increment
-      const tenPercentIncrement = Math.floor(percent / 10) * 10;
-      if (tenPercentIncrement > lastReportedProgressRef.current && tenPercentIncrement < 100) {
-        reportAnalyticsEvent('VIDEO_PROGRESS', {
-          watchPct: tenPercentIncrement,
-          secondsWatched: Math.round(currentTime),
-          duration: Math.round(duration),
-        });
-        lastReportedProgressRef.current = tenPercentIncrement;
-      }
-    } catch (err) {
-      // Player might not be ready
-      console.debug('Error tracking progress:', err);
-    }
-  }, [onProgress, reportAnalyticsEvent]);
-
-  // Initialize player when API is ready
+  // Listen to YouTube postMessage events for progress tracking
   useEffect(() => {
-    if (!isAPIReady || !videoId || !containerRef.current) return;
+    if (!videoId) return;
 
-    const container = containerRef.current;
-    const playerId = `youtube-player-${videoId}`;
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept messages from YouTube
+      if (!event.origin.includes('youtube.com')) return;
 
-    // Create player element
-    const playerDiv = document.createElement('div');
-    playerDiv.id = playerId;
-    container.innerHTML = '';
-    container.appendChild(playerDiv);
+      let data: Record<string, unknown>;
+      try {
+        data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+      } catch {
+        return;
+      }
 
-    try {
-      playerRef.current = new window.YT.Player(playerId, {
-        videoId,
-        playerVars: {
-          autoplay: autoPlay ? 1 : 0,
-          rel: 0, // Don't show related videos
-          modestbranding: 1, // Minimal YouTube branding
-          enablejsapi: 1,
-          origin: typeof window !== 'undefined' ? window.location.origin : '',
-        },
-        events: {
-          onReady: (event) => {
-            setIsLoading(false);
+      // YouTube sends info events with current time and duration
+      if (data.event === 'infoDelivery' && data.info) {
+        const info = data.info as Record<string, unknown>;
+        const currentTime = info.currentTime as number | undefined;
+        const duration = info.duration as number | undefined;
 
-            // Report video play event
-            reportAnalyticsEvent('VIDEO_PLAY', {
-              secondsWatched: 0,
-              duration: Math.round(event.target.getDuration()),
-            });
+        if (duration && duration > 0) durationRef.current = duration;
 
-            // Start progress tracking
-            progressIntervalRef.current = setInterval(trackProgress, POLL_INTERVAL);
-          },
-          onStateChange: (event) => {
-            const playerState = window.YT.PlayerState;
+        if (currentTime !== undefined && durationRef.current > 0) {
+          const percent = (currentTime / durationRef.current) * 100;
 
-            if (event.data === playerState.PLAYING) {
-              // Report resume if not at beginning
-              const currentTime = event.target.getCurrentTime();
-              if (currentTime > 5) {
-                reportAnalyticsEvent('VIDEO_PLAY', {
-                  secondsWatched: Math.round(currentTime),
-                  duration: Math.round(event.target.getDuration()),
-                });
-              }
-            } else if (event.data === playerState.PAUSED) {
-              // Report pause with current position
-              reportAnalyticsEvent('VIDEO_PAUSE', {
-                secondsWatched: Math.round(event.target.getCurrentTime()),
-                duration: Math.round(event.target.getDuration()),
-              });
-            } else if (event.data === playerState.ENDED) {
-              // Video completed - report 100%
-              onProgress?.(100);
-              reportAnalyticsEvent('VIDEO_COMPLETE', {
-                watchPct: 100,
-                secondsWatched: Math.round(event.target.getDuration()),
-                duration: Math.round(event.target.getDuration()),
+          PROGRESS_MILESTONES.forEach((milestone) => {
+            if (percent >= milestone && !reportedMilestonesRef.current.has(milestone)) {
+              reportedMilestonesRef.current.add(milestone);
+              onProgressRef.current?.(milestone);
+              reportAnalyticsEvent(milestone >= 90 ? 'VIDEO_COMPLETE' : 'VIDEO_PROGRESS', {
+                watchPct: milestone,
+                secondsWatched: Math.round(currentTime),
+                duration: Math.round(durationRef.current),
               });
             }
-          },
-          onError: (event) => {
-            setError('Failed to load YouTube video. Please try again.');
-            setIsLoading(false);
-
-            // Report error
-            reportAnalyticsEvent('VIDEO_ERROR', {
-              errorCode: event.data,
-            });
-          },
-        },
-      });
-    } catch (err) {
-      setError('Failed to initialize YouTube player');
-      setIsLoading(false);
-    }
-
-    return () => {
-      // Cleanup
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
+          });
+        }
       }
-      if (playerRef.current?.destroy) {
-        playerRef.current.destroy();
+
+      if (data.event === 'video-ended') {
+        onProgressRef.current?.(100);
+        reportAnalyticsEvent('VIDEO_COMPLETE', {
+          watchPct: 100,
+          secondsWatched: Math.round(durationRef.current),
+          duration: Math.round(durationRef.current),
+        });
       }
     };
-  }, [isAPIReady, videoId, autoPlay, onProgress, reportAnalyticsEvent, trackProgress]);
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [videoId, reportAnalyticsEvent]);
 
   if (!videoId) {
     return (
@@ -291,18 +137,6 @@ export function YouTubePlayer({
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>Invalid YouTube URL</AlertDescription>
         </Alert>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className={`aspect-video w-full rounded-lg bg-muted flex items-center justify-center ${className}`}>
-        <div className="flex flex-col items-center gap-2">
-          <Skeleton className="h-12 w-12 rounded-full" />
-          <Skeleton className="h-4 w-24" />
-          <p className="text-xs text-muted-foreground">Loading YouTube player...</p>
-        </div>
       </div>
     );
   }
@@ -318,11 +152,40 @@ export function YouTubePlayer({
     );
   }
 
+  const params = new URLSearchParams({
+    rel: '0',
+    modestbranding: '1',
+    enablejsapi: '1',
+    origin: typeof window !== 'undefined' ? window.location.origin : '',
+    ...(autoPlay ? { autoplay: '1' } : {}),
+  });
+
+  const embedUrl = `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+
   return (
-    <div
-      ref={containerRef}
-      className={`aspect-video w-full rounded-lg overflow-hidden bg-black ${className}`}
-      aria-label={title || 'YouTube video player'}
-    />
+    <div className={`relative aspect-video w-full rounded-lg overflow-hidden bg-black ${className}`}>
+      <iframe
+        ref={iframeRef}
+        src={embedUrl}
+        title={title || 'YouTube video player'}
+        className="absolute inset-0 w-full h-full"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          setError('Failed to load YouTube video. Please check your connection.');
+          setIsLoading(false);
+        }}
+      />
+      {isLoading && (
+        <div className="absolute inset-0 bg-muted flex items-center justify-center z-10">
+          <div className="flex flex-col items-center gap-2">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <Skeleton className="h-4 w-24" />
+            <p className="text-xs text-muted-foreground">Loading YouTube player...</p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

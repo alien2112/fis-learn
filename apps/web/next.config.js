@@ -41,6 +41,8 @@ const nextConfig = {
   // Experimental features for performance
   experimental: {
     scrollRestoration: true,
+    // Tree-shake large icon/animation libraries – reduces initial JS bundle on mobile
+    optimizePackageImports: ['lucide-react', 'framer-motion', '@radix-ui/react-accordion', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
   },
 
   // Increase webpack memory limit for build stability
@@ -55,31 +57,16 @@ const nextConfig = {
   },
 
   // Headers for caching and security
+  // Note: CSP is handled per-request by middleware.ts (nonce-based)
   async headers() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011';
-    const apiOrigin = (() => {
-      try { return new URL(apiUrl).origin; } catch { return apiUrl; }
-    })();
-
     const securityHeaders = [
-      {
-        key: 'Content-Security-Policy',
-        value: [
-          "default-src 'self'",
-          "script-src 'self'" + (process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ''),
-          "style-src 'self' 'unsafe-inline'",
-          "img-src 'self' data: https://images.unsplash.com https://ddcpotfxlsdmdqpnphwl.supabase.co",
-          "font-src 'self'",
-          `connect-src 'self' ${apiOrigin} wss://${apiOrigin.replace(/^https?:\/\//, '')}`,
-          "frame-src 'self'",
-          "object-src 'none'",
-          "base-uri 'self'",
-        ].join('; '),
-      },
-      { key: 'X-Frame-Options', value: 'DENY' },
+      // X-Frame-Options removed to allow YouTube iframes
+      // Frame embedding is controlled by CSP frame-ancestors directive in middleware.ts
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+      // Allow Private Network Access (for accessing localhost resources from public IP)
+      { key: 'Access-Control-Allow-Private-Network', value: 'true' },
     ];
 
     return [

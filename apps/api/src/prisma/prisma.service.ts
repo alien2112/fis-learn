@@ -55,16 +55,17 @@ export class PrismaService
         this.queryTracker.set(queryKey, { count: 1, firstSeen: now });
       }
 
-      // Cleanup old tracker entries periodically
-      if (this.queryTracker.size > 1000) {
-        const cutoff = now - 1000;
-        for (const [key, value] of this.queryTracker) {
-          if (value.firstSeen < cutoff) this.queryTracker.delete(key);
-        }
-      }
-
       return result;
     });
+
+    // Prune stale tracker entries every 5 seconds off the hot query path
+    // to prevent memory accumulation under sustained load.
+    setInterval(() => {
+      const cutoff = Date.now() - 1000;
+      for (const [key, value] of this.queryTracker) {
+        if (value.firstSeen < cutoff) this.queryTracker.delete(key);
+      }
+    }, 5000).unref(); // unref() so the timer doesn't keep the process alive
   }
 
   async onModuleInit() {

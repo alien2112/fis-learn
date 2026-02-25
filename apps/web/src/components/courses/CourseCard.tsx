@@ -1,5 +1,6 @@
-﻿'use client';
+'use client';
 
+import { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,6 +9,7 @@ import { InstructorAvatar } from './InstructorAvatar';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useTranslations } from 'next-intl';
+import { DEFAULT_COURSE_IMAGE } from '@/lib/placeholder-images';
 
 export interface Course {
     id: string;
@@ -35,17 +37,19 @@ interface CourseCardProps {
     index?: number;
 }
 
-export function CourseCard({ course, index = 0 }: CourseCardProps) {
+export const CourseCard = memo(function CourseCard({ course, index = 0 }: CourseCardProps) {
     const t = useTranslations('courses.card');
 
-    const priceLabel =
+    const priceLabel = useMemo(() =>
         course.pricingModel === 'FREE'
             ? t('free')
             : typeof course.price === 'number'
                 ? `$${course.price}`
                 : course.pricingModel === 'ACCESS_CODE_ONLY'
                     ? t('accessCode')
-                    : t('paid');
+                    : t('paid'),
+        [course.pricingModel, course.price, t]
+    );
 
     return (
         <motion.div
@@ -60,24 +64,18 @@ export function CourseCard({ course, index = 0 }: CourseCardProps) {
                 <Card className="h-full flex flex-col overflow-hidden border-border/50 bg-card hover:shadow-lg transition-all duration-300">
                     {/* Image Section */}
                     <div className="relative aspect-video w-full overflow-hidden">
-                        {course.thumbnail ? (
-                            <motion.div
-                                className="absolute inset-0"
-                                whileHover={{ scale: 1.05 }}
-                                transition={{ duration: 0.4 }}
-                            >
-                                <Image
-                                    src={course.thumbnail}
-                                    alt={course.title}
-                                    fill
-                                    className="object-cover transition-transform duration-300"
-                                />
-                            </motion.div>
-                        ) : (
-                            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-muted/30 to-background flex items-center justify-center">
-                                <BookOpen className="h-10 w-10 text-primary/60" />
-                            </div>
-                        )}
+                        <motion.div
+                            className="absolute inset-0"
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ duration: 0.4 }}
+                        >
+                            <Image
+                                src={course.thumbnail || DEFAULT_COURSE_IMAGE}
+                                alt={course.title}
+                                fill
+                                className="object-cover transition-transform duration-300"
+                            />
+                        </motion.div>
 
                         {/* Overlay Gradient */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
@@ -160,5 +158,5 @@ export function CourseCard({ course, index = 0 }: CourseCardProps) {
             </Link>
         </motion.div>
     );
-}
+});
 

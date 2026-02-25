@@ -32,7 +32,7 @@ export interface CodeEditorProps {
   lessonId: string;
   exerciseId: string;
   onRun?: (code: string) => Promise<CodeExecutionResult>;
-  onSubmit?: (code: string, result: CodeExecutionResult) => void;
+  onSubmit?: (code: string) => void | Promise<void>;
   onProgress?: (progress: number) => void;
   className?: string;
   readOnly?: boolean;
@@ -100,6 +100,7 @@ export function LiveCodeEditor({
   const [originalCode] = useState(initialCode);
   const [output, setOutput] = useState<CodeExecutionResult | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'output' | 'console' | 'preview'>('output');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -166,6 +167,16 @@ export function LiveCodeEditor({
     }
   }, [originalCode]);
 
+  const handleSubmit = useCallback(async () => {
+    if (!onSubmit || isSubmitting || isRunning) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmit(code);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [code, onSubmit, isSubmitting, isRunning]);
+
   const handleSave = useCallback(() => {
     // Save to localStorage as draft
     const draftKey = `code-draft-${lessonId}-${exerciseId}`;
@@ -205,7 +216,7 @@ export function LiveCodeEditor({
   return (
     <div className={cn(
       'flex flex-col bg-white rounded-xl border border-slate-200 overflow-hidden',
-      isFullscreen ? 'fixed inset-0 z-50 rounded-none' : '',
+      isFullscreen ? 'fixed inset-0 z-50 rounded-none' : 'min-h-[520px]',
       className
     )}>
       {/* Header */}
@@ -284,7 +295,7 @@ export function LiveCodeEditor({
               readOnly={readOnly}
               spellCheck={false}
               className={cn(
-                'w-full h-full p-4 font-mono text-sm leading-6 resize-none',
+                'w-full h-full min-h-[360px] p-4 font-mono text-sm leading-6 resize-none',
                 'bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20',
                 'selection:bg-blue-200',
                 readOnly && 'bg-slate-50 cursor-not-allowed'
@@ -367,23 +378,25 @@ export function LiveCodeEditor({
                             <span className="font-medium">تم التنفيذ بنجاح</span>
                           </div>
                           <p className="text-xs text-emerald-600">
-                            وقت التنفيذ: {output.executionTime}ms
+                            وقت التنفيذ: {output.executionTime < 1 ? `${Math.round(output.executionTime * 1000)}ms` : `${output.executionTime.toFixed(2)}s`}
                           </p>
                         </div>
                       ) : (
                         <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                           <div className="flex items-center gap-2 text-red-700 mb-2">
                             <AlertCircle className="w-5 h-5" />
-                            <span className="font-medium">حدث خطأ</span>
+                            <span className="font-medium">حدث خطأ في التنفيذ</span>
                           </div>
                         </div>
                       )}
 
-                      {output.output && (
+                      {output.output ? (
                         <pre className="p-3 bg-slate-900 text-slate-100 rounded-lg text-sm font-mono overflow-x-auto">
                           {output.output}
                         </pre>
-                      )}
+                      ) : output.status === 'success' ? (
+                        <p className="text-xs text-slate-400 italic">لا يوجد ناتج للطباعة</p>
+                      ) : null}
 
                       {output.error && (
                         <pre className="p-3 bg-red-900/10 text-red-800 rounded-lg text-sm font-mono overflow-x-auto border border-red-200">
@@ -456,15 +469,15 @@ export function LiveCodeEditor({
             </AnimatePresence>
           </div>
 
-          {/* Run Button */}
-          <div className="p-4 border-t border-slate-200 bg-white">
+          {/* Run / Submit Buttons */}
+          <div className="p-4 border-t border-slate-200 bg-white space-y-2">
             <button
               onClick={handleRun}
-              disabled={isRunning || readOnly}
+              disabled={isRunning || isSubmitting || readOnly}
               className={cn(
                 'w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2',
                 'transition-all duration-200',
-                isRunning 
+                isRunning || isSubmitting
                   ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300'
               )}
@@ -481,6 +494,31 @@ export function LiveCodeEditor({
                 </>
               )}
             </button>
+            {onSubmit && (
+              <button
+                onClick={handleSubmit}
+                disabled={isRunning || isSubmitting || readOnly}
+                className={cn(
+                  'w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2',
+                  'transition-all duration-200',
+                  isRunning || isSubmitting
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200 hover:shadow-xl hover:shadow-emerald-300'
+                )}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    جاري الإرسال...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-5 h-5" />
+                    تسليم الكود
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

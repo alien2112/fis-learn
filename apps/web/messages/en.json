@@ -3,6 +3,62 @@
     "title": "FIS Learn - E-Learning Platform",
     "description": "Your gateway to quality online education. Learn from expert instructors and advance your career."
   },
+  "auth": {
+    "login": {
+      "welcomeBack": "Welcome back",
+      "subtitle": "Log in to continue your learning journey.",
+      "email": "Email",
+      "password": "Password",
+      "forgotPassword": "Forgot your password?",
+      "submit": "Log In",
+      "submitting": "Signing in...",
+      "newTo": "New to FIS Learn?",
+      "createAccount": "Create an account",
+      "emailPlaceholder": "you@example.com",
+      "passwordPlaceholder": "Your password",
+      "mfa": {
+        "title": "Two-factor authentication",
+        "instruction": "Enter the code from your authenticator app.",
+        "codeLabel": "Verification code",
+        "codePlaceholder": "6-digit code",
+        "submit": "Verify",
+        "submitting": "Verifying...",
+        "back": "Back to login"
+      },
+      "errors": {
+        "required": "Email and password are required.",
+        "server": "Unable to reach the server. Please try again.",
+        "mfaRequired": "MFA code is required."
+      },
+      "success": {
+        "loggedIn": "Logged in successfully. Redirecting..."
+      }
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Start learning with expert-led courses.",
+      "name": "Full name",
+      "namePlaceholder": "Jane Doe",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Create a password",
+      "passwordHint": "Min 8 characters with uppercase, lowercase, number, and special character.",
+      "confirmPassword": "Confirm password",
+      "confirmPasswordPlaceholder": "Repeat your password",
+      "submit": "Create Account",
+      "submitting": "Creating account...",
+      "alreadyHaveAccount": "Already have an account?",
+      "login": "Log in",
+      "errors": {
+        "required": "All fields are required.",
+        "match": "Passwords do not match.",
+        "server": "Unable to reach the server. Please try again.",
+        "emailExists": "An account with this email already exists. Try logging in instead."
+      },
+      "success": "Account created successfully! You can now log in."
+    }
+  },
   "navigation": {
     "home": "Home",
     "brandName": "FIS Academy",
@@ -12,8 +68,154 @@
     "contact": "Contact",
     "login": "Login",
     "register": "Register",
-    "dashboard": "Dashboard",
+    "studentDashboard": "Student Dashboard",
+    "myCourses": "My Courses",
+    "assessments": "Assessments",
+    "settings": "Settings",
     "logout": "Logout"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": {
+      "title": "Profile",
+      "subtitle": "Your account information."
+    },
+    "password": {
+      "title": "Change password",
+      "subtitle": "Update your account password.",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "placeholder": "••••••••",
+      "button": "Update password",
+      "updating": "Updating..."
+    },
+    "mfa": {
+      "title": "Two-factor authentication",
+      "security": "2FA Security",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "descriptionEnabled": "Your account is protected with two-factor authentication.",
+      "descriptionDisabled": "Add an extra layer of security by requiring a code at login.",
+      "setup": "Set up 2FA",
+      "settingUp": "Setting up...",
+      "disable": "Disable 2FA",
+      "verify": "Verify and enable",
+      "verifying": "Verifying...",
+      "backupCodes": "Backup codes",
+      "backupCodesDesc": "Save these codes in a safe place. Each can only be used once.",
+      "scanCode": "Scan this code with your authenticator app",
+      "verificationCode": "Verification code"
+    }
+  },
+  "dashboard": {
+    "welcome": "Welcome back, {name}",
+    "subtitle": "Track your learning progress and recent activity.",
+    "browseCourses": "Browse Courses",
+    "stats": {
+      "totalEnrollments": "Total Enrollments",
+      "activeCourses": "Active Courses",
+      "completedCourses": "Completed Courses",
+      "averageProgress": "Average Progress"
+    },
+    "continueLearning": {
+      "title": "Continue Learning",
+      "subtitle": "Pick up where you left off",
+      "noActive": "No active courses. Start learning!",
+      "resume": "Resume",
+      "progress": "{percent}% complete"
+    },
+    "recentEnrollments": {
+      "title": "Recent Enrollments",
+      "subtitle": "Latest courses you joined.",
+      "viewAll": "View All",
+      "enrolled": "Enrolled {time}",
+      "community": "Community",
+      "noEnrollments": "No enrollments yet.",
+      "status": {
+        "ACTIVE": "Active",
+        "COMPLETED": "Completed",
+        "DROPPED": "Dropped"
+      }
+    },
+    "sidebar": {
+      "experience": "Experience",
+      "level": "Level {num}",
+      "badges": "Badges",
+      "settings": "Account Settings"
+    },
+    "community": {
+      "title": "Community Activity",
+      "comingSoon": "Coming soon: See what your peers are learning and join discussions directly from your dashboard."
+    },
+    "error": {
+      "title": "Dashboard unavailable",
+      "signinRequired": "Sign in required",
+      "signinRequiredDesc": "You must be logged in to view your dashboard.",
+      "login": "Log In"
+    }
+  },
+  "myCourses": {
+    "title": "My Courses",
+    "enrolledCount": "{count} {count, plural, one {course} other {courses}} enrolled",
+    "browseMore": "Browse more courses",
+    "filters": {
+      "all": "All",
+      "active": "Active",
+      "completed": "Completed"
+    },
+    "noEnrollments": "You haven't enrolled in any courses yet.",
+    "noFilteredEnrollments": "No {filter} courses found.",
+    "signInRequired": "Sign in required",
+    "signInRequiredDesc": "You must be logged in to view your courses.",
+    "error": "Error",
+    "card": {
+      "progress": "Progress",
+      "lessonsCompleted": "{completed} of {total} lessons completed",
+      "review": "Review Course",
+      "continue": "Continue Learning",
+      "completed": "Completed",
+      "dropped": "Dropped",
+      "inProgress": "In Progress",
+      "instructor": "Instructor"
+    }
+  },
+  "assessments": {
+    "title": "Assessments",
+    "subtitle": "Track your progress and test your skills",
+    "noAssessments": "No assessments taken yet.",
+    "noAssessmentsDesc": "Start working on code exercises in your courses to see your progress here.",
+    "goToCourses": "Go to My Courses",
+    "error": "Error",
+    "stats": {
+      "total": "Total Submissions",
+      "passed": "Passed",
+      "rate": "Success Rate"
+    },
+    "card": {
+      "points": "{earned} / {total} pts",
+      "tests": "{passed} of {total} tests"
+    },
+    "status": {
+      "PASSED": "Passed",
+      "FAILED": "Failed",
+      "PENDING": "Pending"
+    }
+  },
+  "chatbot": {
+    "title": "FIS Academy Assistant",
+    "greeting": "Hi! I'm FIS Academy's assistant. Ask me about our courses, pricing, or features!",
+    "error": "Sorry, I encountered an error. Please try again later.",
+    "placeholder": "Type your message...",
+    "disclaimer": "Powered by AI • Responses are for informational purposes"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "noNotifications": "No notifications yet",
+    "loadMore": "Load more",
+    "loading": "Loading...",
+    "delete": "Delete"
   },
   "hero": {
     "title": "Learn Without Limits",
@@ -196,18 +398,18 @@
     },
     "phone": {
       "title": "Call Us",
-      "value": "+1 (555) 123-4567",
-      "note": "Mon-Fri from 8am to 6pm"
+      "value": "+20 2 2345 6789",
+      "note": "Sun-Thu, 9am–5pm (Cairo time)"
     },
     "visit": {
       "title": "Visit Us",
-      "address": "123 Learning Street",
-      "city": "San Francisco, CA 94102"
+      "address": "5th Settlement, New Cairo",
+      "city": "Cairo, Egypt"
     },
     "hours": {
       "title": "Working Hours",
-      "weekdays": "Mon-Fri: 8am-6pm",
-      "weekend": "Weekend: 10am-4pm"
+      "weekdays": "Sun-Thu: 9am–6pm",
+      "weekend": "Sat: 10am–2pm"
     },
     "form": {
       "title": "Send us a Message",
@@ -316,6 +518,7 @@
     "team": {
       "title": "Meet the Team",
       "subtitle": "The passionate people behind FIS Learn",
+      "alumniTitle": "Ex-Alumni Companies",
       "sarah": {
         "name": "Sarah Johnson",
         "role": "CEO & Founder",
@@ -431,6 +634,46 @@
       "announcements": "Instructor updates, milestones, and course-wide notes.",
       "qa": "Ask questions and get answers from instructors and peers.",
       "discussion": "Open discussion and peer learning space."
+    },
+    "connection_reconnecting": "Reconnecting to the community...",
+    "connection_lost": "Connection lost. Trying to reconnect.",
+    "channel_types": {
+      "announcements": "Announcements",
+      "qa": "Q&A",
+      "discussion": "Discussion"
+    },
+    "sending": "Sending...",
+    "send": "Send",
+    "loading": "Loading...",
+    "roles": {
+      "instructor": "Instructor",
+      "staff": "Staff"
+    },
+    "message_hidden": "This message has been hidden by an instructor.",
+    "replies_count": "{count} {count, plural, one {reply} other {replies}}",
+    "failed_to_send": "Failed to send",
+    "retry": "Retry",
+    "aria": {
+      "unpin": "Unpin message",
+      "pin": "Pin message",
+      "unmark_answer": "Unmark answer",
+      "mark_answer": "Mark as answer",
+      "unlock_thread": "Unlock thread",
+      "lock_thread": "Lock thread",
+      "remove_message": "Remove message",
+      "report_message": "Report message"
+    },
+    "thread_title": "Thread",
+    "thread_subtitle": "Replies and answers",
+    "load_older_replies": "Load older replies",
+    "no_replies_yet": "No replies yet. Be the first to respond.",
+    "write_reply_placeholder": "Write a reply...",
+    "errors": {
+      "load_messages": "Failed to load messages.",
+      "load_thread": "Failed to load thread.",
+      "update_message": "Failed to update message.",
+      "report_message": "Failed to report message.",
+      "remove_message": "Failed to remove message."
     }
   },
   "privacy": {
@@ -496,5 +739,228 @@
         "content": "For questions about these terms, contact us at legal@fislearn.com or through the contact page on our website."
       }
     }
+  },
+  "cookies": {
+    "title": "Cookie Policy",
+    "lastUpdated": "Last updated: February 2026",
+    "intro": "This Cookie Policy explains how FIS Academy uses cookies and similar technologies to recognise you when you visit our platform.",
+    "sections": {
+      "what": {
+        "title": "What Are Cookies?",
+        "content": "Cookies are small data files placed on your device. They help us remember your preferences, keep you logged in, and understand how you use our platform."
+      },
+      "types": {
+        "title": "Types of Cookies We Use",
+        "essential": "Essential Cookies – Required for core site functionality such as login sessions and security. These cannot be disabled.",
+        "analytics": "Analytics Cookies – Help us understand how visitors interact with the site so we can improve your experience.",
+        "preference": "Preference Cookies – Remember your settings such as language and theme."
+      },
+      "control": {
+        "title": "How to Control Cookies",
+        "content": "You can control and/or delete cookies through your browser settings. Note that disabling essential cookies may prevent parts of the site from functioning correctly."
+      },
+      "contact": {
+        "title": "Contact Us",
+        "content": "If you have questions about our use of cookies, please contact us at privacy@fis-learn.com."
+      }
+    }
+  },
+  "instructors": {
+    "title": "Become an Instructor",
+    "subtitle": "Share your expertise with thousands of learners worldwide and build a sustainable income doing what you love.",
+    "benefits": {
+      "title": "Why Teach on FIS Academy?",
+      "reach": {
+        "title": "Global Reach",
+        "desc": "Teach students across the world in your own language and timezone."
+      },
+      "income": {
+        "title": "Earn Revenue",
+        "desc": "Earn money every time a student enrols in your course — no hidden fees."
+      },
+      "tools": {
+        "title": "Powerful Tools",
+        "desc": "Create rich courses with video, quizzes, code exercises, and live sessions."
+      },
+      "support": {
+        "title": "Dedicated Support",
+        "desc": "Our instructor success team is here to help you create and grow."
+      }
+    },
+    "steps": {
+      "title": "How to Get Started",
+      "plan": {
+        "step": "1",
+        "title": "Plan Your Course",
+        "desc": "Outline your curriculum and learning objectives."
+      },
+      "create": {
+        "step": "2",
+        "title": "Create Your Content",
+        "desc": "Record videos, add exercises, and upload materials."
+      },
+      "publish": {
+        "step": "3",
+        "title": "Publish & Earn",
+        "desc": "Submit for review, get published, and start earning."
+      }
+    },
+    "cta": "Apply to Teach"
+  },
+  "pricing": {
+    "title": "Simple, Transparent Pricing",
+    "subtitle": "Start for free, upgrade when you're ready. No hidden fees.",
+    "free": {
+      "name": "Free",
+      "price": "$0",
+      "period": "forever",
+      "desc": "Perfect for getting started",
+      "features": [
+        "Access free courses",
+        "Community forums",
+        "Progress tracking",
+        "Mobile access"
+      ]
+    },
+    "pro": {
+      "name": "Pro",
+      "price": "$29",
+      "period": "per month",
+      "desc": "Unlock your full potential",
+      "features": [
+        "Everything in Free",
+        "All premium courses",
+        "Live streaming sessions",
+        "Code execution environment",
+        "Certificate of completion",
+        "Priority support"
+      ]
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "price": "Custom",
+      "period": "",
+      "desc": "For teams and organisations",
+      "features": [
+        "Everything in Pro",
+        "Team management",
+        "Custom learning paths",
+        "Dedicated account manager",
+        "SSO & API access",
+        "SLA guarantee"
+      ]
+    },
+    "cta_pro": "Get Started with Pro",
+    "cta_enterprise": "Contact Sales",
+    "faq_note": "Have questions? Visit our"
+  },
+  "careers": {
+    "title": "Careers at FIS Academy",
+    "subtitle": "Help us build the future of education. We're a passionate team on a mission to make quality learning accessible to everyone.",
+    "values_title": "Our Culture",
+    "values": {
+      "mission": {
+        "title": "Mission-Driven",
+        "desc": "Everything we do is aimed at improving learner outcomes."
+      },
+      "remote": {
+        "title": "Remote-First",
+        "desc": "Work from anywhere in the world with flexible hours."
+      },
+      "growth": {
+        "title": "Growth Mindset",
+        "desc": "We invest in your learning and professional development."
+      },
+      "impact": {
+        "title": "Real Impact",
+        "desc": "Your work will reach learners in dozens of countries."
+      }
+    },
+    "open_roles": "Open Roles",
+    "no_roles": "We don't have any open positions right now, but we're always looking for talented people. Send your CV to careers@fis-learn.com and we'll be in touch.",
+    "cta_email": "careers@fis-learn.com"
+  },
+  "help": {
+    "title": "Help Center",
+    "subtitle": "Find answers, troubleshoot issues, and get the most out of FIS Academy.",
+    "search_placeholder": "Search for help...",
+    "categories": {
+      "account": {
+        "title": "Account & Billing",
+        "topics": [
+          "How to reset your password",
+          "Update payment method",
+          "Cancel subscription",
+          "Download invoice"
+        ]
+      },
+      "courses": {
+        "title": "Courses & Learning",
+        "topics": [
+          "How to enrol in a course",
+          "Track your progress",
+          "Download course materials",
+          "Get a certificate"
+        ]
+      },
+      "technical": {
+        "title": "Technical Support",
+        "topics": [
+          "Video playback issues",
+          "Browser compatibility",
+          "Mobile app support",
+          "Accessibility settings"
+        ]
+      },
+      "instructors": {
+        "title": "For Instructors",
+        "topics": [
+          "Upload course content",
+          "Set pricing",
+          "View analytics",
+          "Manage students"
+        ]
+      }
+    },
+    "contact_note": "Can't find what you're looking for?",
+    "contact_link": "Contact Support"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything you need to know about FIS Academy.",
+    "questions": [
+      {
+        "q": "Is FIS Academy free to use?",
+        "a": "Yes! You can access all free courses without paying anything. A Pro subscription unlocks premium courses and features."
+      },
+      {
+        "q": "How do I get a certificate?",
+        "a": "Complete all lessons in a course and pass the final assessment. A certificate will be automatically generated for you."
+      },
+      {
+        "q": "Can I learn at my own pace?",
+        "a": "Absolutely. All pre-recorded courses are available 24/7 and you can progress at whatever speed suits you."
+      },
+      {
+        "q": "What languages are available?",
+        "a": "Our platform supports English and Arabic. Course content varies by language — check each course page for availability."
+      },
+      {
+        "q": "How do I become an instructor?",
+        "a": "Visit our Become an Instructor page, apply with a sample lesson, and our team will review your application within 5 business days."
+      },
+      {
+        "q": "Is my payment information secure?",
+        "a": "Yes. All payments are processed through Stripe, a PCI-DSS Level 1 certified provider. We never store your card details."
+      },
+      {
+        "q": "Can I cancel my subscription?",
+        "a": "Yes, you can cancel at any time from your account settings. You'll retain access until the end of your billing period."
+      },
+      {
+        "q": "Do courses expire?",
+        "a": "No. Once you enrol in a course, you have lifetime access to it — even if you cancel your subscription."
+      }
+    ]
   }
 }

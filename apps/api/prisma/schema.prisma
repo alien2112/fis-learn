@@ -264,6 +264,7 @@ model RefreshToken {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([expiresAt])
   @@map("refresh_tokens")
 }
 
@@ -393,6 +394,7 @@ model CourseSection {
   course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessons Lesson[]
 
+  @@index([courseId])
   @@map("course_sections")
 }
 
@@ -414,6 +416,7 @@ model Lesson {
   progress      LessonProgress[]
   communityMessages CommunityMessage[]
 
+  @@index([sectionId])
   @@map("lessons")
 }
 
@@ -691,6 +694,8 @@ model Enrollment {
   @@index([courseId])
   @@index([status])
   @@index([expiresAt])
+  @@index([enrolledAt])
+  @@index([userId, status])
   @@map("enrollments")
 }
 
@@ -705,6 +710,7 @@ model LessonProgress {
 
   @@unique([userId, lessonId])
   @@index([userId])
+  @@index([lessonId])
   @@map("lesson_progress")
 }
 
@@ -845,6 +851,7 @@ model CommunityMessage {
   moderationActions CommunityModerationAction[]
 
   @@index([courseId, channelId, createdAt])
+  @@index([channelId, isPinned, createdAt])
   @@index([parentId, createdAt])
   @@index([lessonId, createdAt])
   @@map("community_messages")
@@ -1076,6 +1083,7 @@ model Session {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expiresAt])
   @@map("sessions")
 }
 
@@ -1412,4 +1420,20 @@ model BulkNotification {
   @@index([status])
   @@index([sentAt])
   @@map("bulk_notifications")
+}
+
+// ============ SITE SETTINGS ============
+
+model SiteSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   @db.Text
+  label       String
+  description String?
+  category    String   // 'branding' | 'hero' | 'features' | 'testimonials' | 'team'
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@map("site_settings")
 }

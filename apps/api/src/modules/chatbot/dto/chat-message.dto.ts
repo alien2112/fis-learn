@@ -1,4 +1,4 @@
-import { IsArray, IsIn, IsString, MaxLength, ArrayMaxSize, ValidateNested, IsOptional } from 'class-validator';
+import { IsArray, IsIn, IsString, MaxLength, ArrayMaxSize, ValidateNested, IsOptional, IsNotEmpty, MinLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class MessageDto {
@@ -6,13 +6,15 @@ class MessageDto {
   role: 'user' | 'assistant';
 
   @IsString()
-  @MaxLength(2000)
+  @IsNotEmpty({ message: 'Message content cannot be empty' })
+  @MinLength(1, { message: 'Message content must have at least 1 character' })
+  @MaxLength(2000, { message: 'Message content cannot exceed 2000 characters' })
   content: string;
 }
 
 export class ChatMessageDto {
-  @IsArray()
-  @ArrayMaxSize(20)
+  @IsArray({ message: 'Messages must be an array' })
+  @ArrayMaxSize(20, { message: 'Cannot send more than 20 messages at once' })
   @ValidateNested({ each: true })
   @Type(() => MessageDto)
   messages: MessageDto[];

@@ -1,6 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
+import { useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import {
   BookOpen,
   MessageCircle,
@@ -59,24 +63,31 @@ const typeColors: Record<string, string> = {
   STREAK_MILESTONE: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300',
 };
 
-function timeAgo(date: string): string {
-  const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return 'Just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(date).toLocaleDateString();
-}
-
 export function NotificationItem({
   notification,
   onMarkAsRead,
   onDelete,
 }: NotificationItemProps) {
   const router = useRouter();
+  const locale = useLocale();
+  const rtf = useMemo(() => new Intl.RelativeTimeFormat(locale === 'ar' ? 'ar-EG' : 'en', { numeric: 'auto' }), [locale]);
+
+  const timeAgo = (date: string): string => {
+    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+    if (Math.abs(seconds) < 60) return locale === 'ar' ? 'الآن' : 'Just now';
+    
+    const minutes = Math.floor(seconds / 60);
+    if (Math.abs(minutes) < 60) return rtf.format(minutes, 'minute');
+    
+    const hours = Math.floor(minutes / 60);
+    if (Math.abs(hours) < 24) return rtf.format(hours, 'hour');
+    
+    const days = Math.floor(hours / 24);
+    if (Math.abs(days) < 7) return rtf.format(days, 'day');
+    
+    return new Date(date).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US');
+  };
+
   const icon = typeIcons[notification.type] || <Info className="w-4 h-4" />;
   const colorClass = typeColors[notification.type] || 'bg-gray-100 text-gray-600';
 
@@ -105,7 +116,7 @@ export function NotificationItem({
       }`}
     >
       {!notification.isRead && (
-        <span className="absolute left-1 top-4 w-2 h-2 rounded-full bg-blue-500" />
+        <span className={cn("absolute top-4 w-2 h-2 rounded-full bg-blue-500", locale === 'ar' ? 'right-1' : 'left-1')} />
       )}
       <div className={`flex-shrink-0 p-2 rounded-full ${colorClass}`}>{icon}</div>
       <div className="flex-1 min-w-0">

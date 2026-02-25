@@ -33,6 +33,12 @@ export class LoggingInterceptor implements NestInterceptor {
   private readonly slowRequestThreshold = 500; // ms - adjust based on your SLA
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    // Skip logging for non-HTTP contexts (WebSocket, RPC) to avoid calling
+    // HTTP-only methods like setHeader on a socket object.
+    if (context.getType() !== 'http') {
+      return next.handle();
+    }
+
     const request = context.switchToHttp().getRequest<RequestWithId>();
     const response = context.switchToHttp().getResponse();
 

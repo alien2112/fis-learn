@@ -89,13 +89,17 @@ export function SkillTreeVisualizer({
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
 
+  // Safely access nodes array
+  const nodes = useMemo(() => Array.isArray(tree?.nodes) ? tree.nodes : [], [tree?.nodes]);
+
   // Calculate SVG paths between nodes
   const connections = useMemo(() => {
     const paths: { from: SkillNode; to: SkillNode }[] = [];
     
-    tree.nodes.forEach(node => {
-      node.prerequisites.forEach(prereqId => {
-        const prereqNode = tree.nodes.find(n => n.id === prereqId);
+    nodes.forEach(node => {
+      const prereqs = Array.isArray(node.prerequisites) ? node.prerequisites : [];
+      prereqs.forEach(prereqId => {
+        const prereqNode = nodes.find(n => n.id === prereqId);
         if (prereqNode) {
           paths.push({ from: prereqNode, to: node });
         }
@@ -103,7 +107,7 @@ export function SkillTreeVisualizer({
     });
     
     return paths;
-  }, [tree.nodes]);
+  }, [nodes]);
 
   const handleNodeClick = useCallback((node: SkillNode) => {
     if (node.status === 'locked') {
@@ -131,7 +135,7 @@ export function SkillTreeVisualizer({
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-emerald-500" />
               <span>
-                {tree.nodes.filter(n => n.status === 'completed' || n.status === 'mastered').length}/{tree.nodes.length} مكتمل
+                {nodes.filter(n => n.status === 'completed' || n.status === 'mastered').length}/{nodes.length} مكتمل
               </span>
             </div>
           </div>
@@ -167,7 +171,7 @@ export function SkillTreeVisualizer({
         </svg>
 
         {/* Nodes */}
-        {tree.nodes.map((node) => {
+        {nodes.map((node) => {
           const config = statusConfig[node.status];
           const Icon = config.icon;
           const isHovered = hoveredNode === node.id;
@@ -264,8 +268,8 @@ export function SkillTreeVisualizer({
                         <div className="mt-3 pt-2 border-t">
                           <span className="text-amber-600 font-medium">المتطلبات:</span>
                           <ul className="mt-1 space-y-0.5">
-                            {node.prerequisites.map(prereqId => {
-                              const prereq = tree.nodes.find(n => n.id === prereqId);
+                            {(Array.isArray(node.prerequisites) ? node.prerequisites : []).map(prereqId => {
+                              const prereq = nodes.find(n => n.id === prereqId);
                               return prereq ? (
                                 <li key={prereqId} className="text-slate-400">• {prereq.name}</li>
                               ) : null;
@@ -342,7 +346,7 @@ export function SkillTreeEditor({
       status: 'available',
       progress: 0,
     };
-    setTree(prev => ({ ...prev, nodes: [...prev.nodes, newNode] }));
+    setTree(prev => ({ ...prev, nodes: [...(prev.nodes ?? []), newNode] }));
     setSelectedNode(newNode);
   }, [tree.category]);
 
@@ -389,7 +393,7 @@ export function SkillTreeEditor({
                   setSelectedNode(updated);
                   setTree(prev => ({
                     ...prev,
-                    nodes: prev.nodes.map(n => n.id === updated.id ? updated : n)
+                    nodes: (prev.nodes ?? []).map(n => n.id === updated.id ? updated : n)
                   }));
                 }}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -405,7 +409,7 @@ export function SkillTreeEditor({
                   setSelectedNode(updated);
                   setTree(prev => ({
                     ...prev,
-                    nodes: prev.nodes.map(n => n.id === updated.id ? updated : n)
+                    nodes: (prev.nodes ?? []).map(n => n.id === updated.id ? updated : n)
                   }));
                 }}
                 rows={3}
@@ -426,7 +430,7 @@ export function SkillTreeEditor({
                   setSelectedNode(updated);
                   setTree(prev => ({
                     ...prev,
-                    nodes: prev.nodes.map(n => n.id === updated.id ? updated : n)
+                    nodes: (prev.nodes ?? []).map(n => n.id === updated.id ? updated : n)
                   }));
                 }}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -445,7 +449,7 @@ export function SkillTreeEditor({
                   setSelectedNode(updated);
                   setTree(prev => ({
                     ...prev,
-                    nodes: prev.nodes.map(n => n.id === updated.id ? updated : n)
+                    nodes: (prev.nodes ?? []).map(n => n.id === updated.id ? updated : n)
                   }));
                 }}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -459,22 +463,23 @@ export function SkillTreeEditor({
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">المتطلبات</label>
               <div className="space-y-2 max-h-40 overflow-auto">
-                {tree.nodes
+                {(tree.nodes ?? [])
                   .filter(n => n.id !== selectedNode.id)
                   .map(node => (
                     <label key={node.id} className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={selectedNode.prerequisites.includes(node.id)}
+                        checked={(selectedNode.prerequisites ?? []).includes(node.id)}
                         onChange={(e) => {
+                          const currentPrereqs = Array.isArray(selectedNode.prerequisites) ? selectedNode.prerequisites : [];
                           const prereqs = e.target.checked
-                            ? [...selectedNode.prerequisites, node.id]
-                            : selectedNode.prerequisites.filter(id => id !== node.id);
+                            ? [...currentPrereqs, node.id]
+                            : currentPrereqs.filter(id => id !== node.id);
                           const updated = { ...selectedNode, prerequisites: prereqs };
                           setSelectedNode(updated);
                           setTree(prev => ({
                             ...prev,
-                            nodes: prev.nodes.map(n => n.id === updated.id ? updated : n)
+                            nodes: (prev.nodes ?? []).map(n => n.id === updated.id ? updated : n)
                           }));
                         }}
                         className="rounded"

@@ -17,6 +17,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { GlassCard } from '@/components/ui/glass-card';
+import { BLOG_IMAGES } from '@/lib/placeholder-images';
 
 // Mock Data (Same as previous)
 const blogPosts: Record<string, {
@@ -184,11 +185,13 @@ export default function BlogPostPage({
 
       {/* Main Content Layout */}
       <div className="container max-w-6xl mx-auto px-4 md:px-6">
-        {post.image && (
-          <div className="rounded-3xl overflow-hidden aspect-[21/9] mb-12 shadow-2xl relative">
-            <img src={post.image} alt={post.title} className="w-full h-full object-cover" />
-          </div>
-        )}
+        <div className="rounded-3xl overflow-hidden aspect-[21/9] mb-12 shadow-2xl relative">
+          <img
+            src={post.image ?? BLOG_IMAGES.onlineLearning}
+            alt={post.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
 
         <div className="grid lg:grid-cols-[1fr_300px] gap-12">
           {/* Article Body */}

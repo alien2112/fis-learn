@@ -4,7 +4,8 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
-import { Request, Response } from 'express';
+import * as express from 'express';
+import type { Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { validateEnvironment } from './common/config/env.validation';
 
@@ -21,19 +22,19 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // ============ SECURITY HEADERS (Helmet) ============
+  const swaggerEnabled = process.env.DISABLE_SWAGGER !== 'true';
   app.use(
     helmet({
       // Content Security Policy
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          // Only allow unsafe-inline for Swagger UI in non-production
-          styleSrc:
-            process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true'
-              ? ["'self'", "'unsafe-inline'"]
-              : ["'self'"],
+          styleSrc: swaggerEnabled ? ["'self'", "'unsafe-inline'"] : ["'self'"],
           imgSrc: ["'self'", 'data:', 'https:'],
-          scriptSrc: ["'self'"],
+          // Swagger UI bundle needs 'unsafe-eval' to run (otherwise blank white screen)
+          scriptSrc: swaggerEnabled
+            ? ["'self'", "'unsafe-eval'"]
+            : ["'self'"],
         },
       },
       // Prevent clickjacking
@@ -75,9 +76,15 @@ async function bootstrap() {
   );
 
   // ============ CORS CONFIGURATION ============
+  // CORS_ORIGINS: comma-separated list of additional allowed origins (e.g. nginx proxy URL)
+  const extraOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+    : [];
+
   const allowedOrigins = [
     process.env.ADMIN_URL || 'http://localhost:3000',
     process.env.WEB_URL || 'http://localhost:3002',
+    ...extraOrigins,
   ];
 
   // Add development origins
@@ -125,7 +132,6 @@ async function bootstrap() {
   });
 
   // ============ BODY SIZE LIMIT ============
-  const express = require('express');
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -139,13 +145,14 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
-      // Detailed error messages in development
-      disableErrorMessages: process.env.NODE_ENV === 'production',
+      // Always return field-level validation messages so clients can show meaningful errors
+      disableErrorMessages: false,
     }),
   );
 
   // ============ SWAGGER DOCUMENTATION ============
-  if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
+  // Enabled by default; set DISABLE_SWAGGER=true to hide /docs in production.
+  if (process.env.DISABLE_SWAGGER !== 'true') {
     const config = new DocumentBuilder()
       .setTitle('FIS Learn API')
       .setDescription(
@@ -202,20 +209,70 @@ Errors follow a consistent format with machine-readable codes:
       .addTag('MFA', 'Multi-factor authentication')
       .addTag('Categories', 'Course categories')
       .addTag('Access Codes', 'Access code management')
+      .addTag('Health', 'Health check and readiness probes')
+      .addTag('Site Settings', 'Public and admin site configuration')
+      .addTag('Community', 'Course channels and messages')
+      .addTag('Admin - Skill Trees', 'Skill tree CRUD and publishing')
+      .addTag('Video', 'Video upload and asset management')
+      .addTag('Streaming', 'Live streaming sessions')
+      .addTag('Notifications', 'User notifications and preferences')
+      .addTag('Code Execution', 'Execute code and get languages')
+      .addTag('Code Exercises', 'Code exercises and submissions')
+      .addTag('Chatbot', 'AI chat (public and authenticated)')
+      .addTag('Consent', 'Cookie/consent recording')
+      .addTag('Audit Logs', 'Admin audit log query')
+      .addTag('Analytics', 'Events and dashboard analytics')
+      .addTag('Dashboard', 'Admin dashboard KPIs and stats')
+      .addTag('Maintenance', 'Maintenance mode (if present)')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api/docs', app, document, {
-      swaggerOptions: {
-        persistAuthorization: true,
-        docExpansion: 'none',
-        filter: true,
-        tagsSorter: 'alpha',
-        operationsSorter: 'alpha',
-      },
+    // Serve only the OpenAPI JSON/YAML at /api/docs-json; UI is served via CDN (avoids static 404s).
+    SwaggerModule.setup('docs', app, document, {
+      useGlobalPrefix: true,
+      swaggerUiEnabled: false,
     });
 
-    logger.log('Swagger documentation enabled at /api/docs');
+    // Serve Swagger UI HTML at /api/docs (under global prefix so route is registered with the app).
+    const SWAGGER_UI_CDN = 'https://unpkg.com/swagger-ui-dist@5.17.14';
+    const swaggerHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FIS Learn API – Swagger UI</title>
+  <link rel="stylesheet" href="${SWAGGER_UI_CDN}/swagger-ui.css">
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="${SWAGGER_UI_CDN}/swagger-ui-bundle.js"></script>
+  <script src="${SWAGGER_UI_CDN}/swagger-ui-standalone-preset.js"></script>
+  <script>
+    window.onload = function() {
+      window.ui = SwaggerUIBundle({
+        url: '/api/docs-json',
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        layout: "StandaloneLayout"
+      });
+    };
+  </script>
+</body>
+</html>`;
+
+    const httpAdapter = app.getHttpAdapter();
+    const sendHtml = (_req: unknown, res: any) => {
+      res.type('text/html');
+      res.send(swaggerHtml);
+    };
+    httpAdapter.get('/api/docs', sendHtml);
+    httpAdapter.get('/api/docs/', sendHtml);
+
+    logger.log('Swagger documentation enabled at /api/docs (UI from CDN)');
   }
 
   // ============ START SERVER ============
@@ -225,7 +282,7 @@ Errors follow a consistent format with machine-readable codes:
   logger.log(`API is running on http://localhost:${port}`);
   logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 
-  if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
+  if (process.env.DISABLE_SWAGGER !== 'true') {
     logger.log(`Swagger docs available at http://localhost:${port}/api/docs`);
   }
 

@@ -43,17 +43,16 @@ RUN pnpm --filter api exec nest build
 
 # Stage 3: Runner (Production)
 FROM node:20-alpine AS production
-RUN apk add --no-cache libc6-compat openssl
+# dumb-init: lightweight init that properly forwards OS signals to Node.js.
+# Without it, Node.js runs as PID 1 and never receives SIGTERM from Docker,
+# causing 10-second forced kills instead of graceful shutdown.
+RUN apk add --no-cache libc6-compat openssl dumb-init
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
 
 WORKDIR /app
-
-# Set environment
-ENV NODE_ENV=production
-ENV PORT=3011
 
 # Install pnpm
 RUN npm install -g pnpm@8.15.0
@@ -62,15 +61,18 @@ RUN npm install -g pnpm@8.15.0
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 
-# Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
+# Copy node_modules from builder stage (includes all dependencies)
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
+
+# Set environment
+ENV NODE_ENV=production
+ENV PORT=3011
+ENV NODE_PATH=/app/node_modules:/app/node_modules/.pnpm/node_modules
 
 # Copy built application
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-
-# Generate Prisma client using locally installed version
-RUN pnpm --filter api exec prisma generate
 
 # Change ownership to non-root user
 RUN chown -R nodejs:nodejs /app
@@ -83,5 +85,7 @@ EXPOSE 3011
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3011/api/v1/health/live', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"
 
-# Start the application
-CMD ["node", "apps/api/dist/main.js"]
+# dumb-init wraps Node.js so SIGTERM/SIGINT are properly forwarded,
+# enabling NestJS graceful shutdown hooks to run before the process exits.
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["node", "--max-old-space-size=512", "--max-semi-space-size=64", "apps/api/dist/src/main.js"]

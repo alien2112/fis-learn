@@ -35,10 +35,8 @@ export class AnalyticsService {
       skipDuplicates: true,
     });
 
-    // 2. Update progress for key events (real-time)
-    for (const event of events) {
-      await this.updateProgressFromEvent(studentId, event, now);
-    }
+    // 2. Update progress for key events in parallel (was sequential for..of + await).
+    await Promise.all(events.map((event) => this.updateProgressFromEvent(studentId, event, now)));
 
     return { tracked: events.length };
   }
@@ -79,21 +77,12 @@ export class AnalyticsService {
   ) {
     if (!event.courseId) return;
 
-    const course = await this.prisma.course.findUnique({
-      where: { id: event.courseId },
-      include: {
-        sections: {
-          include: { lessons: true },
-        },
-      },
+    // Use an indexed COUNT instead of fetching the full course tree
+    const totalLessons = await this.prisma.lesson.count({
+      where: { section: { courseId: event.courseId } },
     });
 
-    if (!course) return;
-
-    const totalLessons = course.sections.reduce(
-      (sum: number, s: { lessons: { length: number } }) => sum + s.lessons.length,
-      0,
-    );
+    if (totalLessons === 0) return;
 
     // Get current progress
     const existing = await this.prisma.studentProgress.findUnique({
@@ -224,19 +213,10 @@ export class AnalyticsService {
   ) {
     if (!event.courseId) return;
 
-    const course = await this.prisma.course.findUnique({
-      where: { id: event.courseId },
-      include: {
-        sections: { include: { lessons: true } },
-      },
+    // Use an indexed COUNT instead of fetching the full course tree
+    const totalLessons = await this.prisma.lesson.count({
+      where: { section: { courseId: event.courseId } },
     });
-
-    if (!course) return;
-
-    const totalLessons = course.sections.reduce(
-      (sum: number, s: { lessons: { length: number } }) => sum + s.lessons.length,
-      0,
-    );
 
     await this.prisma.studentProgress.upsert({
       where: {

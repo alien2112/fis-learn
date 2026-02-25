@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, ArrowRight, Zap, Target, Users } from 'lucide-react';
@@ -13,7 +13,17 @@ const icons = {
     Target,
 };
 
-export function FeatureSection() {
+interface FeatureImages {
+    ownPace?: string;
+    mentorship?: string;
+    projectBased?: string;
+}
+
+interface FeatureSectionProps {
+    featureImages?: FeatureImages;
+}
+
+export function FeatureSection({ featureImages }: FeatureSectionProps) {
     const t = useTranslations('home.features');
 
     const features = [
@@ -21,19 +31,19 @@ export function FeatureSection() {
             key: 'ownPace',
             icon: 'Zap',
             align: 'right',
-            image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop",
+            image: featureImages?.ownPace || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop",
         },
         {
             key: 'mentorship',
             icon: 'Users',
             align: 'left',
-            image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=2070&auto=format&fit=crop",
+            image: featureImages?.mentorship || "https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=2070&auto=format&fit=crop",
         },
         {
             key: 'projectBased',
             icon: 'Target',
             align: 'right',
-            image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop",
+            image: featureImages?.projectBased || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop",
         }
     ];
 

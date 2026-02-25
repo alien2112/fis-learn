@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChatMessage } from './ChatMessage';
+import { useTranslations } from 'next-intl';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -19,8 +20,10 @@ interface ChatWindowProps {
 }
 
 const STORAGE_KEY = 'fis-chatbot-messages';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://72.62.29.3:8080/api/v1';
 
 export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
+  const t = useTranslations('chatbot');
   const [messages, setMessages] = useState<Message[]>(() => {
     // Load from sessionStorage on mount
     if (typeof window !== 'undefined') {
@@ -58,15 +61,19 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
   // Add initial greeting if no messages
   useEffect(() => {
     if (messages.length === 0) {
-      setMessages([
-        {
-          role: 'assistant',
-          content: "Hi! I'm FIS Learn's assistant. Ask me about our courses, pricing, or features!",
-          timestamp: new Date(),
-        },
-      ]);
+      const greeting = t('greeting');
+      // Only add greeting if translation is loaded and not empty
+      if (greeting && greeting.trim()) {
+        setMessages([
+          {
+            role: 'assistant',
+            content: greeting,
+            timestamp: new Date(),
+          },
+        ]);
+      }
     }
-  }, []);
+  }, [messages.length, t]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -84,15 +91,25 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
 
     try {
       // Prepare messages for API (only user and assistant roles, no timestamps)
-      const apiMessages = [...messages, userMessage].map(({ role, content }) => ({
-        role,
-        content,
-      }));
+      // Limit to last 20 messages to match backend validation
+      // Filter out any messages with empty content
+      const apiMessages = [...messages, userMessage]
+        .filter(({ content }) => content && content.trim())
+        .map(({ role, content }) => ({
+          role,
+          content: content.trim(),
+        }))
+        .slice(-20);
 
-      const response = await fetch('/api/v1/chatbot/public', {
+      // Validate we have at least the user message
+      if (apiMessages.length === 0) {
+        throw new Error('No valid messages to send');
+      }
+
+      const response = await fetch(`${API_URL}/chatbot/public`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        credentials: 'omit',
         body: JSON.stringify({ messages: apiMessages }),
       });
 
@@ -101,10 +118,11 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
       }
 
       const data = await response.json();
+      const reply = data?.data?.reply ?? data?.reply;
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: data.reply,
+        content: reply || t('error'),
         timestamp: new Date(),
       };
 
@@ -112,7 +130,7 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
     } catch (error) {
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again later.',
+        content: t('error'),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -137,7 +155,7 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
       <div className="flex items-center justify-between px-4 py-3 border-b bg-primary text-primary-foreground">
         <div className="flex items-center gap-2">
           <Bot className="w-5 h-5" />
-          <span className="font-semibold">FIS Learn Assistant</span>
+          <span className="font-semibold">{t('title')}</span>
         </div>
         <Button
           variant="ghost"
@@ -175,7 +193,7 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
+            placeholder={t('placeholder')}
             disabled={isLoading}
             className="flex-1"
             maxLength={2000}
@@ -193,7 +211,7 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          Powered by AI • Responses are for informational purposes
+          {t('disclaimer')}
         </p>
       </form>
     </div>

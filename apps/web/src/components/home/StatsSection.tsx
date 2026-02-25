@@ -7,6 +7,9 @@ const companies = [
     'Google', 'Microsoft', 'Spotify', 'Amazon', 'Netflix', 'Airbnb', 'Uber', 'Adobe'
 ];
 
+// Pre-doubled so the JSX render never allocates a new array
+const MARQUEE_COMPANIES = [...companies, ...companies];
+
 export function StatsSection() {
     const t = useTranslations('stats');
 
@@ -55,7 +58,7 @@ export function StatsSection() {
                             }}
                             className="flex gap-16 pr-16 whitespace-nowrap"
                         >
-                            {[...companies, ...companies].map((company, index) => (
+                            {MARQUEE_COMPANIES.map((company, index) => (
                                 <span
                                     key={index}
                                     className="text-xl md:text-2xl font-bold text-muted-foreground/40 hover:text-foreground transition-colors cursor-default"

@@ -34,6 +34,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { LessonEditorDialog } from './LessonEditorDialog';
+import { CourseTreeView } from './CourseTreeView';
 
 interface Section {
   id: string;
@@ -85,25 +86,33 @@ export default function CourseEditPage() {
     },
   });
 
-  // Mock sections data - in production, fetch from API
-  const [sections, setSections] = useState<Section[]>([
-    {
-      id: 'section-1',
-      title: 'المقدمة',
-      description: 'مقدمة عن الكورس',
-      sortOrder: 1,
-      lessons: [
-        {
-          id: 'lesson-1',
-          title: 'ترحيب',
-          contentType: 'VIDEO',
-          isFreePreview: true,
-          sortOrder: 1,
-          duration: 300,
-        },
-      ],
-    },
-  ]);
+  const addSectionMutation = useMutation({
+    mutationFn: (title: string) => coursesApi.createSection(courseId, { title, sortOrder: (course as any)?.sections?.length + 1 || 1 }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', courseId] }),
+  });
+
+  const deleteSectionMutation = useMutation({
+    mutationFn: (sectionId: string) => coursesApi.deleteSection(sectionId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', courseId] }),
+  });
+
+  const addLessonMutation = useMutation({
+    mutationFn: ({ sectionId, data }: { sectionId: string; data: any }) => coursesApi.createLesson(sectionId, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', courseId] }),
+  });
+
+  const updateLessonMutation = useMutation({
+    mutationFn: ({ lessonId, data }: { lessonId: string; data: any }) => coursesApi.updateLesson(lessonId, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', courseId] }),
+  });
+
+  const deleteLessonMutation = useMutation({
+    mutationFn: (lessonId: string) => coursesApi.deleteLesson(lessonId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', courseId] }),
+  });
+
+  // Sections come from the API via the course query
+  const sections: Section[] = (course as any)?.sections || [];
 
   const toggleSection = (sectionId: string) => {
     const newExpanded = new Set(expandedSections);
@@ -127,16 +136,18 @@ export default function CourseEditPage() {
   };
 
   const handleSaveLesson = (lessonData: any) => {
-    // In production, call API to save lesson
-    console.log('Saving lesson:', lessonData);
+    if (editingLesson) {
+      updateLessonMutation.mutate({ lessonId: editingLesson.id, data: lessonData });
+    } else if (editingSectionId) {
+      addLessonMutation.mutate({ sectionId: editingSectionId, data: lessonData });
+    }
     setIsLessonDialogOpen(false);
     setEditingLesson(null);
   };
 
   const handleDeleteLesson = (lessonId: string) => {
     if (confirm('هل أنت متأكد من حذف هذا الدرس؟')) {
-      // In production, call API to delete
-      console.log('Deleting lesson:', lessonId);
+      deleteLessonMutation.mutate(lessonId);
     }
   };
 
@@ -195,9 +206,10 @@ export default function CourseEditPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+        <TabsList className="grid w-full grid-cols-4 lg:w-[520px]">
           <TabsTrigger value="details">التفاصيل</TabsTrigger>
           <TabsTrigger value="content">المحتوى</TabsTrigger>
+          <TabsTrigger value="tree">شجرة الكورس</TabsTrigger>
           <TabsTrigger value="settings">الإعدادات</TabsTrigger>
         </TabsList>
 
@@ -279,7 +291,15 @@ export default function CourseEditPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>الأقسام والدروس</CardTitle>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const title = prompt('اسم القسم الجديد:');
+                  if (title?.trim()) addSectionMutation.mutate(title.trim());
+                }}
+                disabled={addSectionMutation.isPending}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 إضافة قسم
               </Button>
@@ -315,8 +335,8 @@ export default function CourseEditPage() {
                       <Badge variant="secondary">
                         {section.lessons.length} درس
                       </Badge>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -325,6 +345,19 @@ export default function CourseEditPage() {
                       >
                         <Plus className="w-4 h-4 mr-1" />
                         إضافة درس
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-500 hover:text-red-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm('حذف هذا القسم وجميع دروسه؟')) {
+                            deleteSectionMutation.mutate(section.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -415,6 +448,21 @@ export default function CourseEditPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tree Tab */}
+        <TabsContent value="tree" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-800">شجرة الكورس</h2>
+              <p className="text-sm text-slate-500">خريطة بصرية كاملة لبنية الكورس والمحتوى</p>
+            </div>
+          </div>
+          <CourseTreeView
+            course={course}
+            sections={sections}
+            onEditLesson={handleEditLesson}
+          />
         </TabsContent>
 
         {/* Settings Tab */}

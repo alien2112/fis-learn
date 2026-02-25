@@ -103,7 +103,7 @@ export default function AnalyticsPage() {
     queryKey: ['dashboard-kpis'],
     queryFn: async () => {
       const response = await apiClient.get('/dashboard/kpis');
-      return response.data;
+      return response.data.data;
     },
   });
 
@@ -112,7 +112,7 @@ export default function AnalyticsPage() {
     queryKey: ['enrollment-trend', months],
     queryFn: async () => {
       const response = await apiClient.get(`/dashboard/enrollment-trend?months=${months}`);
-      return response.data;
+      return response.data.data;
     },
   });
 
@@ -121,7 +121,7 @@ export default function AnalyticsPage() {
     queryKey: ['user-growth', months],
     queryFn: async () => {
       const response = await apiClient.get(`/dashboard/user-growth?months=${months}`);
-      return response.data;
+      return response.data.data;
     },
   });
 
@@ -130,7 +130,7 @@ export default function AnalyticsPage() {
     queryKey: ['course-stats'],
     queryFn: async () => {
       const response = await apiClient.get('/dashboard/course-stats');
-      return response.data;
+      return response.data.data;
     },
   });
 
@@ -139,7 +139,7 @@ export default function AnalyticsPage() {
     queryKey: ['top-instructors'],
     queryFn: async () => {
       const response = await apiClient.get('/dashboard/top-instructors?limit=5');
-      return response.data;
+      return response.data.data;
     },
   });
 

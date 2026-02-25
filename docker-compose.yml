@@ -29,7 +29,7 @@ services:
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -49,16 +49,29 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3011
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-fis_learn}?schema=public
-      DIRECT_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-fis_learn}?schema=public
-      REDIS_URL: redis://redis:6379
+      # Set ENABLE_SWAGGER=false to disable API docs at /api/docs
+      ENABLE_SWAGGER: ${ENABLE_SWAGGER:-true}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      DIRECT_DATABASE_URL: ${DIRECT_DATABASE_URL:-${DATABASE_URL:?DATABASE_URL is required}}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
-      JWT_EXPIRY: 15m
-      JWT_REFRESH_EXPIRY: 7d
-      ADMIN_URL: http://localhost:3004
-      WEB_URL: http://localhost:3010
-      NEXT_PUBLIC_API_URL: http://localhost:3011/api/v1
+      JWT_EXPIRY: 3650d
+      JWT_REFRESH_EXPIRY: 3650d
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?MFA_ENCRYPTION_KEY is required}
+      ADMIN_URL: ${ADMIN_URL:-https://fis-academy.tech}
+      WEB_URL: ${WEB_URL:-https://fis-academy.tech}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://www.fis-academy.tech}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3011/api/v1}
+      CODE_EXECUTION_PROVIDER: ${CODE_EXECUTION_PROVIDER:-judge0}
+      JUDGE0_API_URL: ${JUDGE0_API_URL:-http://judge0-server:2358}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-5-20250929}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
     ports:
       - "3011:3011"
     depends_on:
@@ -75,11 +88,13 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3011/api/v1}
     container_name: fis-web
     environment:
       NODE_ENV: production
       PORT: 3010
-      NEXT_PUBLIC_API_URL: http://localhost:3011/api/v1
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3011/api/v1}
     ports:
       - "3010:3010"
     depends_on:
@@ -93,11 +108,13 @@ services:
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3011/api/v1}
     container_name: fis-admin
     environment:
       NODE_ENV: production
       PORT: 3004
-      NEXT_PUBLIC_API_URL: http://localhost:3011/api/v1
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3011/api/v1}
     ports:
       - "3004:3004"
     depends_on:
@@ -112,14 +129,74 @@ services:
     container_name: fis-nginx
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
     depends_on:
       - api
       - web
       - admin
     networks:
       - fis-network
+    restart: unless-stopped
+
+  # Judge0 Code Execution Service
+  judge0-server:
+    image: judge0/judge0:latest
+    container_name: fis-judge0-server
+    ports:
+      - "2358:2358"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: judge0
+      RAILS_ENV: production
+      SECRET_KEY_BASE: ${JWT_SECRET}
+      CPU_TIME_LIMIT: "5"
+      MEMORY_LIMIT: "128000"
+      ENABLE_WAIT_RESULT: "true"
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - fis-network
+    privileged: true
+    shm_size: "256m"
+    restart: unless-stopped
+
+  judge0-worker:
+    image: judge0/judge0:latest
+    container_name: fis-judge0-worker
+    command: ["./scripts/workers"]
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: judge0
+      RAILS_ENV: production
+      SECRET_KEY_BASE: ${JWT_SECRET}
+      CPU_TIME_LIMIT: "5"
+      MEMORY_LIMIT: "128000"
+      ENABLE_WAIT_RESULT: "true"
+    depends_on:
+      - redis
+      - postgres
+      - judge0-server
+    networks:
+      - fis-network
+    privileged: true
+    shm_size: "256m"
     restart: unless-stopped
 
 volumes:

@@ -29,13 +29,21 @@ interface SendPayload {
   lessonId?: string; // Optional lesson-level discussion
 }
 
+const gatewayOrigins = [
+  process.env.WEB_URL || 'http://localhost:3010',
+  process.env.ADMIN_URL || 'http://localhost:3004',
+  // Support comma-separated extra origins (same as HTTP CORS config)
+  ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean) : []),
+  // Always allow localhost variants in dev
+  ...(process.env.NODE_ENV !== 'production'
+    ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3010']
+    : []),
+];
+
 @WebSocketGateway({
   namespace: '/community',
   cors: {
-    origin: [
-      process.env.WEB_URL || 'http://localhost:3002',
-      process.env.ADMIN_URL || 'http://localhost:3000',
-    ],
+    origin: gatewayOrigins,
     credentials: true,
   },
 })
@@ -139,13 +147,14 @@ export class CommunityGateway implements OnGatewayInit {
   private async allowMessage(userId: string): Promise<boolean> {
     const key = `rate:community:${userId}`;
     const windowSeconds = 10;
-    const maxMessages = 6;
+    const maxMessages = 15; // 15 messages per 10 seconds
 
-    const current = await this.redisClient.incr(key);
-    if (current === 1) {
-      // First message in window, set expiry
-      await this.redisClient.expire(key, windowSeconds);
-    }
+    // Use a pipeline so INCR + EXPIRE are sent in a single RTT
+    const [[, current]] = await this.redisClient
+      .pipeline()
+      .incr(key)
+      .expire(key, windowSeconds, 'NX') // only set TTL on first increment
+      .exec() as [[null, number], [null, number]];
 
     return current <= maxMessages;
   }
@@ -180,17 +189,31 @@ export class CommunityGateway implements OnGatewayInit {
   ) {
     const user = client.data.user as AuthUser;
     if (!user) {
-      throw new WsException('Unauthorized');
+      return { ok: false, error: 'Unauthorized' };
     }
 
-    if (!await this.allowMessage(user.id)) {
-      throw new WsException('Slow down');
+    try {
+      if (!payload?.channelId || !payload?.body?.trim()) {
+        return { ok: false, error: 'Invalid payload' };
+      }
+
+      const allowed = await this.allowMessage(user.id);
+      if (!allowed) {
+        return { ok: false, error: 'Slow down' };
+      }
+
+      const message = await this.communityService.createMessage(payload.channelId, user, payload);
+      try {
+        this.emitMessage(message, payload.clientId);
+      } catch (emitErr: any) {
+        this.logger.warn(`community:send broadcast failed (message saved): ${emitErr?.message}`);
+      }
+      return { ok: true, messageId: message.id, clientId: payload.clientId, message };
+    } catch (err: any) {
+      const message = err?.message || err?.response?.message || 'Failed to send message';
+      this.logger.warn(`community:send failed: ${message}`);
+      return { ok: false, error: typeof message === 'string' ? message : 'Failed to send message' };
     }
-
-    const message = await this.communityService.createMessage(payload.channelId, user, payload);
-    this.emitMessage(message, payload.clientId);
-
-    return { ok: true, messageId: message.id, clientId: payload.clientId };
   }
 
   emitMessage(message: any, clientId?: string) {

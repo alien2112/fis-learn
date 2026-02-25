@@ -8,6 +8,7 @@ import { Calendar, Clock, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { useTranslations } from 'next-intl';
+import { BLOG_IMAGES } from '@/lib/placeholder-images';
 
 interface FeaturedPostProps {
     post: {
@@ -34,17 +35,11 @@ export function FeaturedPost({ post }: FeaturedPostProps) {
         >
             <div className="grid md:grid-cols-2 gap-0">
                 <div className="relative h-64 md:h-auto overflow-hidden">
-                    {/* Fallback pattern if no image */}
-                    <div className={`absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/5 to-secondary w-full h-full transition-transform duration-700 group-hover:scale-105`} />
-
-                    {/* If actual image exists, we would use Next/Image here */}
-                    {post.coverImage && (
-                        <img
-                            src={post.coverImage}
-                            alt={post.title}
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
-                    )}
+                    <img
+                        src={post.coverImage ?? BLOG_IMAGES.onlineLearning}
+                        alt={post.title}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
 
                     <Badge className="absolute top-6 left-6 z-10 bg-background/90 text-foreground backdrop-blur-md hover:bg-background/100 transition-colors">
                         Featured

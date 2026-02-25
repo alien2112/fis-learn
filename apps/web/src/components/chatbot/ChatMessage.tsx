@@ -12,7 +12,7 @@ export function ChatMessage({ role, content, timestamp }: ChatMessageProps) {
   const isUser = role === 'user';
 
   // Simple markdown-like formatting (preserve line breaks and basic formatting)
-  const formattedContent = content
+  const formattedContent = (content || '')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/\n/g, '<br />');

@@ -1,4 +1,5 @@
 import { Controller, Get, Injectable, Res } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PrismaService } from '@/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { Public } from '@/common/decorators/public.decorator';
@@ -150,27 +151,38 @@ export class HealthService {
   }
 }
 
+@ApiTags('Health')
 @Public()
 @Controller('health')
 export class HealthController {
   constructor(private healthService: HealthService) {}
 
   @Get()
-  async check(@Res() res: Response) {
+  @ApiOperation({ summary: 'Full health check (DB, Redis, memory)' })
+  @ApiResponse({ status: 200, description: 'Healthy or degraded' })
+  @ApiResponse({ status: 503, description: 'Unhealthy' })
+  async check(@Res({ passthrough: true }) res: Response) {
     const result = await this.healthService.checkHealth();
     const statusCode = result.status === 'healthy' ? 200 : result.status === 'degraded' ? 200 : 503;
-    res.status(statusCode).json(result);
+    res.status(statusCode);
+    return result;
   }
 
   @Get('live')
+  @ApiOperation({ summary: 'Kubernetes liveness probe' })
+  @ApiResponse({ status: 200, description: 'Process is alive' })
   liveness() {
     return this.healthService.checkLiveness();
   }
 
   @Get('ready')
-  async readiness(@Res() res: Response) {
+  @ApiOperation({ summary: 'Kubernetes readiness probe (DB + Redis)' })
+  @ApiResponse({ status: 200, description: 'Ready to accept traffic' })
+  @ApiResponse({ status: 503, description: 'Not ready' })
+  async readiness(@Res({ passthrough: true }) res: Response) {
     const result = await this.healthService.checkReadiness();
     const statusCode = result.status === 'ready' ? 200 : 503;
-    res.status(statusCode).json(result);
+    res.status(statusCode);
+    return result;
   }
 }

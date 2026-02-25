@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button';
 import { ArrowDown } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
+import { BLOG_IMAGES } from '@/lib/placeholder-images';
+
 // Mock Data
 const featuredPost = {
   slug: 'getting-started-with-online-learning',
   title: 'إزاي تبدأ تتعلم أونلاين صح: دليلك الكامل لـ 2024',
   excerpt: 'شكل التعليم بيتغير بسرعة جداً. اعرف أحسن الطرق والأدوات والاستراتيجيات عشان تستفيد أقصى استفادة من رحلة تعليمك الأونلاين في العصر ده.',
-  coverImage: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop',
+  coverImage: BLOG_IMAGES.onlineLearning,
   author: { name: 'سارة جونسون' },
   category: { name: 'نصائح مذاكرة' },
   publishedAt: '15 يناير، 2024',
@@ -30,6 +32,7 @@ const blogPosts = [
     category: { name: 'تكنولوجيا' },
     publishedAt: '12 يناير، 2024',
     readTime: '8 دقايق قراءة',
+    coverImage: BLOG_IMAGES.programming,
   },
   {
     id: '3',
@@ -40,6 +43,7 @@ const blogPosts = [
     category: { name: 'الشغل والكارير' },
     publishedAt: '10 يناير، 2024',
     readTime: '4 دقايق قراءة',
+    coverImage: BLOG_IMAGES.certification,
   },
   {
     id: '4',
@@ -50,6 +54,7 @@ const blogPosts = [
     category: { name: 'نصائح مذاكرة' },
     publishedAt: '8 يناير، 2024',
     readTime: '6 دقايق قراءة',
+    coverImage: BLOG_IMAGES.study,
   },
   {
     id: '5',
@@ -60,6 +65,7 @@ const blogPosts = [
     category: { name: 'الشغل والكارير' },
     publishedAt: '5 يناير، 2024',
     readTime: '5 دقايق قراءة',
+    coverImage: BLOG_IMAGES.remoteWork,
   },
   {
     id: '6',
@@ -70,6 +76,7 @@ const blogPosts = [
     category: { name: 'تكنولوجيا' },
     publishedAt: '3 يناير، 2024',
     readTime: '7 دقايق قراءة',
+    coverImage: BLOG_IMAGES.ai,
   },
   {
     id: '7',
@@ -80,11 +87,12 @@ const blogPosts = [
     category: { name: 'صحة وتوازن' },
     publishedAt: '1 يناير، 2024',
     readTime: '3 دقايق قراءة',
+    coverImage: BLOG_IMAGES.mindfulness,
   },
 ];
 
 export default async function BlogPage({ params: { locale } }: { params: { locale: string } }) {
-  const t = await getTranslations('blog');
+  const t = await getTranslations({ locale, namespace: 'blog' });
 
   return (
     <main className="min-h-screen bg-background">
