@@ -393,17 +393,17 @@
     "subtitle": "Have questions, feedback, or need support? We're here to help you on your learning journey.",
     "email": {
       "title": "Email Us",
-      "value": "support@fislearn.com",
+      "value": "fis-academy@gmail.com",
       "note": "We reply within 24 hours"
     },
     "phone": {
       "title": "Call Us",
-      "value": "+20 2 2345 6789",
+      "value": "+20 102 000 5678",
       "note": "Sun-Thu, 9am–5pm (Cairo time)"
     },
     "visit": {
       "title": "Visit Us",
-      "address": "5th Settlement, New Cairo",
+      "address": "New Cairo, 5th Settlement",
       "city": "Cairo, Egypt"
     },
     "hours": {
@@ -447,7 +447,7 @@
       "subtitle": "Our support team is available 24/7 to assist you.",
       "helpCenter": "Visit Help Center",
       "officeTitle": "Visit Our Office",
-      "officeAddress": "123 Learning Street, San Francisco, CA 94102"
+      "officeAddress": "New Cairo, 5th Settlement, Cairo, Egypt"
     }
   },
   "about": {

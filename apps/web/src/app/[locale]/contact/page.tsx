@@ -102,15 +102,19 @@ export default function ContactPage() {
       </section>
 
 
-      {/* Map Section */}
-      <section className="h-[400px] w-full bg-muted/50 relative flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-700">
-        <div className="text-center p-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-background shadow-lg mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary w-8 h-8"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>
-          </div>
-          <h3 className="text-xl font-bold">{t('help.officeTitle')}</h3>
-          <p className="text-muted-foreground">{t('help.officeAddress')}</p>
-        </div>
+      {/* Map Section — New Cairo, Egypt */}
+      <section className="h-[450px] w-full relative overflow-hidden">
+        <iframe
+          title="FIS Academy Office — New Cairo, Egypt"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d55255.90113386475!2d31.39474647431641!3d30.007475800000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14583cf56f03f7a1%3A0x4fde6ef8afe39544!2sNew%20Cairo%20City%2C%20Cairo%20Governorate%2C%20Egypt!5e0!3m2!1sen!2seg!4v1708800000000!5m2!1sen!2seg"
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          className="grayscale hover:grayscale-0 transition-all duration-700"
+        />
       </section>
     </div>
   );
