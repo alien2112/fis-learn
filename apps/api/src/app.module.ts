@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CacheModule } from '@nestjs/cache-manager';
+import KeyvRedis from '@keyv/redis';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -70,11 +71,28 @@ import configuration from './config/configuration';
     // Scheduling for cron jobs
     ScheduleModule.forRoot(),
 
-    // Caching layer - in-memory with 1 min default TTL
-    CacheModule.register({
+    // Caching layer
+    // When REDIS_URL is set (production/staging), uses Redis as the cache store
+    // so all API instances share the same cache — required for horizontal scaling.
+    // Falls back to in-memory cache for local development (no Redis needed).
+    // TTL: 60 s default; individual handlers override via @CacheTTL().
+    CacheModule.registerAsync({
       isGlobal: true,
-      ttl: 60 * 1000, // 1 minute default
-      max: 1000,      // max items in cache
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const redisUrl = config.get<string>('redis.url');
+        if (redisUrl && !redisUrl.includes('localhost')) {
+          // Production/staging: shared Redis store — all API instances
+          // read/write the same cache, enabling horizontal scaling.
+          return {
+            stores: [new KeyvRedis(redisUrl)],
+            ttl: 60 * 1000, // 1 minute default
+          } as Record<string, unknown>;
+        }
+        // Local development: plain in-memory cache
+        return { ttl: 60 * 1000, max: 1000 } as Record<string, unknown>;
+      },
     }),
 
     // Feature modules
